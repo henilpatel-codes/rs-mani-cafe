@@ -67,12 +67,12 @@ function AppRoutes() {
       <Route path="/order/:id/track" element={<OrderTrackingPage />} />
 
       {/* Customer */}
-      <Route path="/cart" element={<CartPage />} />
-      <Route path="/checkout" element={<CheckoutPage />} />
-      <Route path="/payment/success" element={<PaymentSuccessPage />} />
-      <Route path="/payment/failed" element={<PaymentFailedPage />} />
-      <Route path="/invoice/:id" element={<InvoicePage />} />
-      <Route path="/orders" element={<ProtectedCustomer><OrderHistoryPage /></ProtectedCustomer>} />
+      <Route path="/cart" element={<ProtectedCustomer><CartPage /></ProtectedCustomer>} />
+<Route path="/checkout" element={<ProtectedCustomer><CheckoutPage /></ProtectedCustomer>} />
+<Route path="/payment/success" element={<ProtectedCustomer><PaymentSuccessPage /></ProtectedCustomer>} />
+<Route path="/payment/failed" element={<ProtectedCustomer><PaymentFailedPage /></ProtectedCustomer>} />
+<Route path="/invoice/:id" element={<ProtectedCustomer><InvoicePage /></ProtectedCustomer>} />
+<Route path="/orders" element={<ProtectedCustomer><OrderHistoryPage /></ProtectedCustomer>} />
 
       {/* Admin */}
       <Route path="/admin" element={<ProtectedAdmin><AdminDashboard /></ProtectedAdmin>} />
