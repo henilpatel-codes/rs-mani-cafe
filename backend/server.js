@@ -24,6 +24,7 @@ const adminRoutes = require('./routes/adminRoutes');
 connectDB();
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // ─── CORS ───────────────────────────────────────────────────────
