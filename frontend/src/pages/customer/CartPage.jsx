@@ -1,82 +1,130 @@
 // pages/customer/CartPage.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { ArrowRight, Clock, CreditCard, Minus, Plus, ShieldCheck, ShoppingBag, Trash2 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import { useCart } from '../../context/CartContext';
 
 export default function CartPage() {
   const { items, removeItem, updateQty, subtotal, clearCart } = useCart();
   const navigate = useNavigate();
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   if (items.length === 0) {
     return (
-      <div style={{ minHeight: '100vh', background: '#fdf6ec', fontFamily: 'DM Sans, sans-serif' }}>
+      <div className="cart-page">
         <Navbar />
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)', gap: '16px', textAlign: 'center', padding: '24px' }}>
-          <ShoppingBag size={64} color="#d4c4b0" />
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '24px', color: '#1a0f05' }}>Your cart is empty</h2>
-          <p style={{ color: '#7c5c3e', fontSize: '15px' }}>Add some delicious items from our menu!</p>
-          <Link to="/menu" style={{ background: '#c8501a', color: '#fff', padding: '12px 28px', borderRadius: '10px', textDecoration: 'none', fontWeight: 600, fontSize: '15px' }}>Browse Menu</Link>
+        <div className="rs-container cart-empty-wrap">
+          <div className="rs-card cart-empty-card">
+            <div className="rs-empty-icon" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+              <ShoppingBag size={36} />
+            </div>
+            <h1>Your cart is empty</h1>
+            <p>Add crispy dosas, soft idlis, beverages or combos from the menu and come back here to checkout.</p>
+            <Link to="/menu" className="rs-btn rs-btn-primary">
+              Browse Menu <ArrowRight size={18} />
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fdf6ec', fontFamily: 'DM Sans, sans-serif' }}>
+    <div className="cart-page">
       <Navbar />
-      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 700, color: '#1a0f05' }}>Your Cart</h1>
-          <button onClick={clearCart} style={{ background: 'none', border: '1px solid #dc2626', color: '#dc2626', padding: '6px 14px', borderRadius: '8px', fontSize: '13px', cursor: 'pointer' }}>Clear All</button>
-        </div>
 
-        <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e8d5c0', overflow: 'hidden', marginBottom: '20px' }}>
-          {items.map((item, idx) => (
-            <div key={item._id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px', borderBottom: idx < items.length - 1 ? '1px solid #f0e4d4' : 'none' }}>
-              <div style={{ width: '52px', height: '52px', borderRadius: '10px', background: item.image ? `url(${item.image}) center/cover` : 'linear-gradient(135deg, #f5e6d0, #e8d5c0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {!item.image && <span style={{ fontSize: '22px' }}>🍽️</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '15px', color: '#1a0f05', marginBottom: '2px' }}>{item.name}</div>
-                <div style={{ fontSize: '14px', color: '#c8501a', fontWeight: 600 }}>₹{item.price} each</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0', background: '#fdf6ec', borderRadius: '8px', border: '1px solid #e8d5c0' }}>
-                <button onClick={() => updateQty(item._id, item.quantity - 1)} style={{ width: '34px', height: '34px', background: 'none', border: 'none', fontSize: '18px', color: '#c8501a', cursor: 'pointer', fontWeight: 700 }}>−</button>
-                <span style={{ width: '28px', textAlign: 'center', fontWeight: 700, fontSize: '15px' }}>{item.quantity}</span>
-                <button onClick={() => updateQty(item._id, item.quantity + 1)} style={{ width: '34px', height: '34px', background: 'none', border: 'none', fontSize: '18px', color: '#c8501a', cursor: 'pointer', fontWeight: 700 }}>+</button>
-              </div>
-              <div style={{ minWidth: '64px', textAlign: 'right', fontWeight: 700, fontSize: '15px', color: '#1a0f05' }}>₹{item.price * item.quantity}</div>
-              <button onClick={() => removeItem(item._id)} style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', padding: '4px' }}>
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Summary */}
-        <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e8d5c0', padding: '20px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px', color: '#7c5c3e' }}>
-            <span>Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} items)</span>
-            <span style={{ fontWeight: 600, color: '#1a0f05' }}>₹{subtotal}</span>
+      <main className="rs-container cart-wrap">
+        <div className="cart-header">
+          <div>
+            <span className="rs-eyebrow"><ShoppingBag size={15} /> Ready to checkout</span>
+            <h1 className="rs-section-title" style={{ marginTop: 12 }}>Your Cart</h1>
+            <p className="rs-section-subtitle">Review your items before placing the order.</p>
           </div>
-          <div style={{ fontSize: '12px', color: '#b8997a', marginBottom: '12px' }}>GST, delivery charges & discounts calculated at checkout</div>
-          <div style={{ borderTop: '1px solid #f0e4d4', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700, color: '#1a0f05' }}>
-            <span>Estimated Total</span>
-            <span style={{ color: '#c8501a' }}>₹{subtotal}</span>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <Link to="/menu" style={{ flex: 1, padding: '13px', background: '#fff', border: '1px solid #c8501a', color: '#c8501a', borderRadius: '10px', textDecoration: 'none', textAlign: 'center', fontWeight: 600, fontSize: '15px' }}>
-            ← Continue Shopping
-          </Link>
-          <button onClick={() => navigate('/checkout')} style={{ flex: 1, padding: '13px', background: '#c8501a', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            Proceed to Checkout <ArrowRight size={16} />
+          <button type="button" onClick={clearCart} className="rs-btn rs-btn-danger">
+            <Trash2 size={16} /> Clear All
           </button>
         </div>
-      </div>
+
+        <div className="cart-layout">
+          <section className="rs-card cart-list" aria-label="Cart items">
+            {items.map((item) => (
+              <article key={item._id} className="cart-item">
+                <div className="cart-img">
+                  {item.image ? <img src={item.image} alt={item.name} loading="lazy" /> : <span>🍽️</span>}
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <h3 className="cart-name">{item.name}</h3>
+                  <div className="cart-price-small">₹{item.price} each</div>
+                </div>
+
+                <div className="qty-control" aria-label={`${item.name} quantity`}>
+                  <button type="button" onClick={() => updateQty(item._id, item.quantity - 1)} aria-label="Decrease quantity">
+                    <Minus size={16} />
+                  </button>
+                  <span>{item.quantity}</span>
+                  <button type="button" onClick={() => updateQty(item._id, item.quantity + 1)} aria-label="Increase quantity">
+                    <Plus size={16} />
+                  </button>
+                </div>
+
+                <div className="cart-line-total">₹{item.price * item.quantity}</div>
+
+                <button type="button" onClick={() => removeItem(item._id)} className="cart-remove" aria-label={`Remove ${item.name}`}>
+                  <Trash2 size={17} />
+                </button>
+              </article>
+            ))}
+          </section>
+
+          <aside className="rs-card cart-summary" aria-label="Cart summary">
+            <h2 className="summary-title">Order Summary</h2>
+            <div className="summary-line">
+              <span>Items</span>
+              <strong>{itemCount}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Subtotal</span>
+              <strong>₹{subtotal}</strong>
+            </div>
+            <div className="summary-line">
+              <span>Delivery / GST</span>
+              <strong>At checkout</strong>
+            </div>
+
+            <div className="summary-note">
+              <Clock size={18} color="#c8501a" />
+              <span>Final delivery charges, discounts and taxes will be calculated on the checkout page.</span>
+            </div>
+
+            <div className="summary-total">
+              <span>Estimated Total</span>
+              <span>₹{subtotal}</span>
+            </div>
+
+            <div className="cart-actions" style={{ marginTop: 18 }}>
+              <button type="button" onClick={() => navigate('/checkout')} className="rs-btn rs-btn-primary">
+                Proceed to Checkout <ArrowRight size={18} />
+              </button>
+              <Link to="/menu" className="rs-btn rs-btn-outline">
+                Continue Shopping
+              </Link>
+            </div>
+
+            <div style={{ display: 'grid', gap: 10, marginTop: 18 }}>
+              <div className="summary-line" style={{ padding: 0, justifyContent: 'flex-start' }}>
+                <ShieldCheck size={17} color="#159447" />
+                <span>Secure ordering</span>
+              </div>
+              <div className="summary-line" style={{ padding: 0, justifyContent: 'flex-start' }}>
+                <CreditCard size={17} color="#159447" />
+                <span>COD and Razorpay supported</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
     </div>
   );
 }

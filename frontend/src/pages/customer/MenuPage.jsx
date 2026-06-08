@@ -1,7 +1,7 @@
 // pages/customer/MenuPage.jsx
-import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Star, Filter } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { Minus, Plus, Search, ShoppingBag, SlidersHorizontal, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
@@ -9,51 +9,68 @@ import { useCart } from '../../context/CartContext';
 
 const CATEGORIES = ['All', 'Dosas', 'Idli', 'Beverages', 'Combos', 'Snacks', 'Rice', 'Breads', 'Sweets'];
 
-function ItemCard({ item, onAdd, qty, onInc, onDec }) {
+const CATEGORY_ALIASES = {
+  Dosas: ['Dosas', 'Dosa'],
+  Idli: ['Idli', 'Idlis'],
+  Beverages: ['Beverages', 'Beverage', 'Drinks', 'Drink'],
+  Combos: ['Combos', 'Combo'],
+  Snacks: ['Snacks', 'Snack'],
+  Rice: ['Rice'],
+  Breads: ['Breads', 'Bread'],
+  Sweets: ['Sweets', 'Sweet', 'Desserts', 'Dessert'],
+};
+
+function normalizeList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function matchesCategory(itemCategory, activeCategory) {
+  if (activeCategory === 'All') return true;
+  return (CATEGORY_ALIASES[activeCategory] || [activeCategory]).includes(itemCategory);
+}
+
+function MenuItemCard({ item, onAdd, qty, onInc, onDec }) {
+  const isVeg = item.isVeg !== false;
+
   return (
-    <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e8d5c0', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ height: '150px', background: item.image ? `url(${item.image}) center/cover` : 'linear-gradient(135deg, #f5e6d0, #e8d5c0)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {!item.image && <span style={{ fontSize: '36px' }}>🍽️</span>}
-        <span style={{ position: 'absolute', top: '8px', left: '8px', background: item.isVeg ? '#16a34a' : '#dc2626', color: '#fff', borderRadius: '4px', padding: '2px 7px', fontSize: '10px', fontWeight: 700 }}>
-          {item.isVeg ? '● VEG' : '● NON-VEG'}
+    <article className="menu-card">
+      <div className="menu-card-media">
+        {item.image ? <img src={item.image} alt={item.name} loading="lazy" /> : <div className="menu-card-placeholder">🍽️</div>}
+        <span className={`rs-badge ${isVeg ? 'rs-badge-veg' : 'rs-badge-nonveg'} menu-card-badge`}>
+          {isVeg ? '● VEG' : '● NON-VEG'}
         </span>
-        {!item.isAvailable && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: '13px', letterSpacing: '0.5px' }}>UNAVAILABLE</span>
+        {!item.isAvailable && <div className="menu-card-overlay">UNAVAILABLE</div>}
+      </div>
+
+      <div className="menu-card-body">
+        <div className="menu-card-top">
+          <h3>{item.name}</h3>
+          <span className="menu-price">₹{item.price}</span>
+        </div>
+        {item.description && <p className="menu-desc">{item.description}</p>}
+        {Number(item.avgRating) > 0 && (
+          <div className="menu-rating">
+            <Star size={14} fill="#f5a623" color="#f5a623" />
+            <span>{item.avgRating} {item.reviewCount ? `(${item.reviewCount})` : ''}</span>
           </div>
         )}
-      </div>
-      <div style={{ padding: '12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1a0f05', margin: 0, flex: 1, lineHeight: '1.3' }}>{item.name}</h3>
-          <span style={{ fontSize: '15px', fontWeight: 700, color: '#c8501a', marginLeft: '6px', whiteSpace: 'nowrap' }}>₹{item.price}</span>
-        </div>
-        {item.description && <p style={{ fontSize: '11px', color: '#7c5c3e', margin: '0 0 6px', lineHeight: '1.4', flex: 1 }}>{item.description}</p>}
-        {item.avgRating > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '8px' }}>
-            <Star size={11} fill="#f59e0b" color="#f59e0b" />
-            <span style={{ fontSize: '11px', color: '#7c5c3e' }}>{item.avgRating} ({item.reviewCount})</span>
+
+        {qty > 0 ? (
+          <div className="qty-control" aria-label={`${item.name} quantity`}>
+            <button type="button" onClick={onDec} aria-label="Decrease quantity"><Minus size={16} /></button>
+            <span>{qty}</span>
+            <button type="button" onClick={onInc} aria-label="Increase quantity"><Plus size={16} /></button>
           </div>
+        ) : (
+          <button type="button" className="menu-add" onClick={() => onAdd(item)} disabled={!item.isAvailable}>
+            <ShoppingBag size={17} /> {item.isAvailable ? 'Add to Cart' : 'Unavailable'}
+          </button>
         )}
-        <div style={{ marginTop: 'auto' }}>
-          {qty > 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fdf6ec', borderRadius: '8px', border: '1px solid #c8501a', overflow: 'hidden' }}>
-              <button onClick={onDec} style={{ padding: '7px 14px', background: 'none', border: 'none', color: '#c8501a', fontSize: '18px', fontWeight: 700, cursor: 'pointer' }}>−</button>
-              <span style={{ fontWeight: 700, color: '#1a0f05', fontSize: '14px' }}>{qty}</span>
-              <button onClick={onInc} style={{ padding: '7px 14px', background: 'none', border: 'none', color: '#c8501a', fontSize: '18px', fontWeight: 700, cursor: 'pointer' }}>+</button>
-            </div>
-          ) : (
-            <button onClick={() => onAdd(item)} disabled={!item.isAvailable} style={{
-              width: '100%', padding: '8px', background: item.isAvailable ? '#c8501a' : '#d4c4b0',
-              color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-              cursor: item.isAvailable ? 'pointer' : 'not-allowed',
-            }}>
-              {item.isAvailable ? '+ Add' : 'Unavailable'}
-            </button>
-          )}
-        </div>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -71,97 +88,144 @@ export default function MenuPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    let mounted = true;
+
     setLoading(true);
-    api.get('/menu').then(r => setItems(r.data)).catch(console.error).finally(() => setLoading(false));
+    api.get('/menu')
+      .then((res) => {
+        if (mounted) setItems(normalizeList(res.data));
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error('Unable to load menu right now');
+      })
+      .finally(() => mounted && setLoading(false));
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const getQty = (id) => cartItems.find(i => i._id === id)?.quantity || 0;
+  const getQty = (id) => cartItems.find((i) => i._id === id)?.quantity || 0;
 
   const handleAdd = (item) => {
     addItem(item);
     toast.success(`${item.name} added!`, { duration: 1500 });
   };
 
-  const handleInc = (item) => {
-    const q = getQty(item._id);
-    updateQty(item._id, q + 1);
-  };
+  const handleInc = (item) => updateQty(item._id, getQty(item._id) + 1);
+  const handleDec = (item) => updateQty(item._id, getQty(item._id) - 1);
 
-  const handleDec = (item) => {
-    const q = getQty(item._id);
-    updateQty(item._id, q - 1);
-  };
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return items.filter((item) => {
+      const matchCat = matchesCategory(item.category, activeCategory);
+      const matchSearch = !term || [item.name, item.description, item.category].some((value) => String(value || '').toLowerCase().includes(term));
+      return matchCat && matchSearch;
+    });
+  }, [items, activeCategory, search]);
 
-  const filtered = items.filter(i => {
-    const matchCat = activeCategory === 'All' || i.category === activeCategory;
-    const matchSearch = i.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  const grouped = useMemo(() => {
+    return filtered.reduce((acc, item) => {
+      const category = item.category || 'Other';
+      if (!acc[category]) acc[category] = [];
+      acc[category].push(item);
+      return acc;
+    }, {});
+  }, [filtered]);
 
-  const grouped = CATEGORIES.filter(c => c !== 'All').reduce((acc, cat) => {
-    const catItems = filtered.filter(i => i.category === cat);
-    if (catItems.length > 0) acc[cat] = catItems;
-    return acc;
-  }, {});
+  const visibleCategories = activeCategory === 'All' ? Object.entries(grouped) : [[activeCategory, filtered]];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fdf6ec', fontFamily: 'DM Sans, sans-serif' }}>
+    <div className="rs-page">
       <Navbar />
-      {/* Header */}
-      <div style={{ background: '#1a0f05', padding: '28px 24px' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: '28px', fontWeight: 700, marginBottom: '16px' }}>Our Menu</h1>
-          <div style={{ position: 'relative', maxWidth: '400px' }}>
-            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#b8997a' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search dishes..."
-              style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(200,80,26,0.4)', borderRadius: '8px', color: '#fdf6ec', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+
+      <header className="menu-page-hero">
+        <div className="rs-container menu-page-head">
+          <div>
+            <span className="rs-eyebrow" style={{ color: '#ffd28a', background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}>
+              <SlidersHorizontal size={15} /> Freshly prepared menu
+            </span>
+            <h1 className="rs-section-title" style={{ color: '#fff8ef', marginTop: 12 }}>Our Menu</h1>
+            <p className="rs-section-subtitle" style={{ color: '#c9aa8b' }}>Search, filter and add your favourite café dishes to cart.</p>
+          </div>
+
+          <div className="menu-search-box">
+            <Search size={18} />
+            <input
+              className="menu-search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search dishes, drinks, combos..."
+              aria-label="Search menu items"
+            />
           </div>
         </div>
-      </div>
+      </header>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px' }}>
-        {/* Category tabs */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '24px' }}>
-          {CATEGORIES.map(cat => (
-            <button key={cat} onClick={() => setActiveCategory(cat)} style={{
-              padding: '7px 16px', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap', cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
-              background: activeCategory === cat ? '#c8501a' : '#fff',
-              color: activeCategory === cat ? '#fff' : '#7c5c3e',
-              boxShadow: activeCategory === cat ? '0 2px 8px rgba(200,80,26,0.3)' : '0 1px 4px rgba(0,0,0,0.08)',
-            }}>{cat}</button>
-          ))}
-        </div>
-
-        {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-            {[1,2,3,4,5,6].map(i => <div key={i} style={{ height: '260px', background: '#e8d5c0', borderRadius: '12px', animation: 'pulse 1.5s ease-in-out infinite' }} />)}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#7c5c3e' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🍽️</div>
-            <p style={{ fontSize: '16px', fontWeight: 600 }}>No items found</p>
-          </div>
-        ) : activeCategory !== 'All' ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-            {filtered.map(item => (
-              <ItemCard key={item._id} item={item} onAdd={handleAdd} qty={getQty(item._id)} onInc={() => handleInc(item)} onDec={() => handleDec(item)} />
+      <div className="menu-toolbar">
+        <div className="rs-container">
+          <div className="category-tabs" role="tablist" aria-label="Menu categories">
+            {CATEGORIES.map((cat) => (
+              <button
+                type="button"
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`category-tab ${activeCategory === cat ? 'category-tab-active' : ''}`}
+              >
+                {cat}
+              </button>
             ))}
           </div>
-        ) : (
-          Object.entries(grouped).map(([cat, catItems]) => (
-            <div key={cat} style={{ marginBottom: '36px' }}>
-              <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '20px', fontWeight: 700, color: '#1a0f05', marginBottom: '14px', paddingBottom: '8px', borderBottom: '2px solid #e8d5c0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {cat} <span style={{ fontSize: '14px', color: '#b8997a', fontFamily: 'DM Sans, sans-serif', fontWeight: 400 }}>({catItems.length} items)</span>
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-                {catItems.map(item => (
-                  <ItemCard key={item._id} item={item} onAdd={handleAdd} qty={getQty(item._id)} onInc={() => handleInc(item)} onDec={() => handleDec(item)} />
-                ))}
-              </div>
-            </div>
-          ))
-        )}
+        </div>
       </div>
+
+      <main className="rs-section" style={{ paddingTop: 8 }}>
+        <div className="rs-container">
+          <div className="menu-results-meta">
+            <span>{loading ? 'Loading fresh items...' : `${filtered.length} item${filtered.length === 1 ? '' : 's'} available`}</span>
+            {search && <span>Search: “{search}”</span>}
+          </div>
+
+          {loading ? (
+            <div className="menu-results-grid">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <div key={i} className="rs-skeleton" style={{ height: 360, borderRadius: 24 }} />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="rs-empty">
+              <div className="rs-empty-icon"><Search size={34} /></div>
+              <h3>No items found</h3>
+              <p>Try another search term or switch category.</p>
+              <button type="button" className="rs-btn rs-btn-primary" onClick={() => { setSearch(''); setActiveCategory('All'); }}>
+                Reset Filters
+              </button>
+            </div>
+          ) : (
+            visibleCategories.map(([category, categoryItems]) => (
+              <section key={category} className="category-block">
+                {activeCategory === 'All' && (
+                  <div className="category-heading">
+                    <h2>{category}</h2>
+                    <span className="rs-badge" style={{ background: '#fff3e5', color: '#a94a16' }}>{categoryItems.length} items</span>
+                  </div>
+                )}
+                <div className="menu-results-grid">
+                  {categoryItems.map((item) => (
+                    <MenuItemCard
+                      key={item._id || item.name}
+                      item={item}
+                      onAdd={handleAdd}
+                      qty={getQty(item._id)}
+                      onInc={() => handleInc(item)}
+                      onDec={() => handleDec(item)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+        </div>
+      </main>
     </div>
   );
 }

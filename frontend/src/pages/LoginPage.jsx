@@ -1,10 +1,19 @@
 // pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Coffee } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+
+function AuthBrand({ subtitle }) {
+  return (
+    <div className="auth-brand">
+      <div className="auth-brand-row"><div className="auth-logo">RS</div><div className="auth-title">MANI Café</div></div>
+      <div className="auth-subtitle">{subtitle}</div>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -13,7 +22,6 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const from = location.state?.from || '/';
 
   const handleSubmit = async (e) => {
@@ -33,67 +41,31 @@ export default function LoginPage() {
         return;
       }
       toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a0f05 0%, #3d2a15 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
-      <div style={{ width: '100%', maxWidth: '400px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <div style={{ background: '#c8501a', borderRadius: '10px', padding: '8px 12px' }}>
-              <span style={{ fontFamily: 'Playfair Display, serif', color: '#fff', fontSize: '20px', fontWeight: 700 }}>RS</span>
+    <div className="auth-page">
+      <div className="auth-wrap animate-fade-up">
+        <AuthBrand subtitle="Sign in to order your South Indian favourites" />
+        <div className="auth-card">
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field">
+              <label>Email Address</label>
+              <input className="auth-input" type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" />
             </div>
-            <span style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: '24px', fontWeight: 700 }}>MANI Café</span>
-          </div>
-          <p style={{ color: '#b8997a', fontSize: '14px' }}>Sign in to your account</p>
-        </div>
-
-        <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(200,80,26,0.3)', borderRadius: '16px', padding: '32px' }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', color: '#f5e6d0', fontSize: '14px', marginBottom: '8px', fontWeight: 500 }}>Email Address</label>
-              <input
-                type="email" required
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-                placeholder="you@example.com"
-                style={{ width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(200,80,26,0.4)', borderRadius: '8px', color: '#fdf6ec', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
-              />
+            <div className="auth-field">
+              <label>Password</label>
+              <div className="auth-input-wrap">
+                <input className="auth-input auth-input-peek" type={showPass ? 'text' : 'password'} required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Enter password" />
+                <button className="auth-eye" type="button" onClick={() => setShowPass(!showPass)}>{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+              </div>
             </div>
-            <div style={{ marginBottom: '24px', position: 'relative' }}>
-              <label style={{ display: 'block', color: '#f5e6d0', fontSize: '14px', marginBottom: '8px', fontWeight: 500 }}>Password</label>
-              <input
-                type={showPass ? 'text' : 'password'} required
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                placeholder="Enter password"
-                style={{ width: '100%', padding: '12px 44px 12px 16px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(200,80,26,0.4)', borderRadius: '8px', color: '#fdf6ec', fontSize: '15px', outline: 'none', boxSizing: 'border-box' }}
-              />
-              <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '40px', background: 'none', border: 'none', color: '#b8997a', cursor: 'pointer' }}>
-                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            <div style={{ textAlign: 'right', marginTop: '-16px', marginBottom: '20px' }}>
-              <Link to="/forgot-password" style={{ color: '#c8501a', fontSize: '13px', textDecoration: 'none' }}>Forgot password?</Link>
-            </div>
-            <button type="submit" disabled={loading} style={{
-              width: '100%', padding: '13px', background: loading ? '#8a3d15' : '#c8501a',
-              color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'background 0.2s',
-            }}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            <div style={{ textAlign: 'right', marginTop: -6 }}><Link to="/forgot-password" className="auth-link">Forgot password?</Link></div>
+            <button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
           </form>
-
-          <p style={{ textAlign: 'center', marginTop: '20px', color: '#b8997a', fontSize: '14px' }}>
-            Don't have an account? <Link to="/register" style={{ color: '#c8501a', textDecoration: 'none', fontWeight: 600 }}>Sign up</Link>
-          </p>
-          <p style={{ textAlign: 'center', marginTop: '12px' }}>
-            <Link to="/delivery/login" style={{ color: '#b8997a', fontSize: '13px', textDecoration: 'none' }}>Delivery partner? Login here →</Link>
-          </p>
+          <p className="auth-link-row">Don&apos;t have an account? <Link to="/register">Sign up</Link></p>
+          <p className="auth-link-row" style={{ marginTop: 10 }}><Link className="auth-secondary-link" to="/delivery/login">Delivery partner? Login here →</Link></p>
         </div>
       </div>
     </div>

@@ -1,7 +1,20 @@
 // components/Navbar.jsx
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, LogOut, ChefHat, Package } from 'lucide-react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import {
+  ShoppingCart,
+  User,
+  Menu,
+  X,
+  LogOut,
+  ChefHat,
+  Package,
+  Home,
+  ClipboardList,
+  ShieldCheck,
+  Truck,
+  Sparkles,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
@@ -11,86 +24,131 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const handleLogout = () => { logout(); navigate('/'); setOpen(false); };
+  const firstName = user?.name?.split(' ')?.[0] || 'User';
+
+  const handleLogout = () => {
+    logout();
+    setOpen(false);
+    navigate('/');
+  };
+
+  const closeMenu = () => setOpen(false);
+
+  const navLinkClass = ({ isActive }) => `rs-nav-link ${isActive ? 'active' : ''}`;
+  const mobileLinkClass = ({ isActive }) => `rs-mobile-link ${isActive ? 'active' : ''}`;
 
   return (
-    <nav style={{ background: '#1a0f05', fontFamily: 'DM Sans, sans-serif' }} className="sticky top-0 z-50 shadow-lg">
-      <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-16">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2" style={{ textDecoration: 'none' }}>
-          <div style={{ background: '#c8501a', borderRadius: '8px', padding: '6px 10px' }}>
-            <span style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: '16px', fontWeight: 700 }}>RS</span>
-          </div>
-          <span style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: '18px', fontWeight: 600 }}>MANI Café</span>
+    <nav className="rs-navbar">
+      <div className="rs-nav-inner">
+        <Link to="/" className="rs-brand" onClick={closeMenu} aria-label="RS MANI Café home">
+          <span className="rs-brand-mark">RS</span>
+          <span className="rs-brand-text">
+            <span className="rs-brand-title">MANI Café</span>
+            <span className="rs-brand-subtitle">Fresh • Fast • South Indian</span>
+          </span>
         </Link>
 
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-6">
-          <Link to="/menu" style={{ color: '#f5e6d0', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Menu</Link>
-          {isAdmin && <Link to="/admin" style={{ color: '#f5a623', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Admin Panel</Link>}
-          {isDelivery && <Link to="/delivery/dashboard" style={{ color: '#f5a623', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Delivery</Link>}
-          {user && !isAdmin && !isDelivery && <Link to="/orders" style={{ color: '#f5e6d0', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>My Orders</Link>}
+        <div className="rs-nav-links" aria-label="Main navigation">
+          <NavLink to="/" className={navLinkClass}>
+            <Home size={17} /> Home
+          </NavLink>
+          <NavLink to="/menu" className={navLinkClass}>
+            <ChefHat size={17} /> Menu
+          </NavLink>
+          {user && !isAdmin && !isDelivery && (
+            <NavLink to="/orders" className={navLinkClass}>
+              <ClipboardList size={17} /> My Orders
+            </NavLink>
+          )}
+          {isAdmin && (
+            <NavLink to="/admin" className={({ isActive }) => `rs-nav-link rs-nav-link-highlight ${isActive ? 'active' : ''}`}>
+              <ShieldCheck size={17} /> Admin Panel
+            </NavLink>
+          )}
+          {isDelivery && (
+            <NavLink to="/delivery/dashboard" className={({ isActive }) => `rs-nav-link rs-nav-link-highlight ${isActive ? 'active' : ''}`}>
+              <Truck size={17} /> Delivery
+            </NavLink>
+          )}
         </div>
 
-        {/* Right side */}
-        <div className="flex items-center gap-3">
+        <div className="rs-nav-actions">
           {!isAdmin && !isDelivery && (
-            <Link to="/cart" style={{ position: 'relative', color: '#fdf6ec', textDecoration: 'none' }}>
-              <ShoppingCart size={22} />
-              {totalItems > 0 && (
-                <span style={{
-                  position: 'absolute', top: '-8px', right: '-8px',
-                  background: '#c8501a', color: '#fff', borderRadius: '50%',
-                  width: '18px', height: '18px', fontSize: '11px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700
-                }}>{totalItems}</span>
-              )}
+            <Link to="/cart" className="rs-cart-link" onClick={closeMenu} aria-label="Open cart">
+              <ShoppingCart size={21} />
+              {totalItems > 0 && <span className="rs-cart-count">{totalItems > 99 ? '99+' : totalItems}</span>}
             </Link>
           )}
+
           {user ? (
-            <div className="hidden md:flex items-center gap-3">
-              <span style={{ color: '#f5e6d0', fontSize: '13px' }}>Hi, {user.name?.split(' ')[0]}</span>
-              <button onClick={handleLogout} style={{
-                background: 'transparent', border: '1px solid #c8501a', color: '#c8501a',
-                borderRadius: '6px', padding: '6px 12px', fontSize: '13px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px'
-              }}>
-                <LogOut size={14} /> Logout
+            <>
+              <div className="rs-user-pill" title={user.name || 'User'}>
+                <User size={16} />
+                <span>Hi, {firstName}</span>
+              </div>
+              <button type="button" onClick={handleLogout} className="rs-nav-btn rs-nav-auth" aria-label="Logout">
+                <LogOut size={16} /> Logout
               </button>
-            </div>
+            </>
           ) : (
-            <div className="hidden md:flex gap-2">
-              <Link to="/login" style={{
-                background: 'transparent', border: '1px solid #c8501a', color: '#c8501a',
-                borderRadius: '6px', padding: '6px 14px', fontSize: '13px', textDecoration: 'none', fontWeight: 500
-              }}>Login</Link>
-              <Link to="/register" style={{
-                background: '#c8501a', color: '#fff',
-                borderRadius: '6px', padding: '6px 14px', fontSize: '13px', textDecoration: 'none', fontWeight: 500
-              }}>Sign Up</Link>
+            <div className="rs-nav-auth">
+              <Link to="/login" className="rs-nav-btn">Login</Link>
+              <Link to="/register" className="rs-nav-btn rs-nav-btn-filled">
+                <Sparkles size={15} /> Sign Up
+              </Link>
             </div>
           )}
-          <button onClick={() => setOpen(!open)} className="md:hidden" style={{ background: 'none', border: 'none', color: '#fdf6ec', cursor: 'pointer' }}>
-            {open ? <X size={24} /> : <Menu size={24} />}
+
+          <button
+            type="button"
+            className="rs-menu-toggle"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+          >
+            {open ? <X size={23} /> : <Menu size={23} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
       {open && (
-        <div style={{ background: '#2d1a0a', borderTop: '1px solid #3d2a15' }} className="md:hidden">
-          <div className="flex flex-col px-4 py-3 gap-3">
-            <Link to="/menu" onClick={() => setOpen(false)} style={{ color: '#f5e6d0', textDecoration: 'none', fontSize: '15px', padding: '8px 0' }}>Menu</Link>
-            {!isAdmin && !isDelivery && <Link to="/cart" onClick={() => setOpen(false)} style={{ color: '#f5e6d0', textDecoration: 'none', fontSize: '15px', padding: '8px 0' }}>Cart ({totalItems})</Link>}
-            {isAdmin && <Link to="/admin" onClick={() => setOpen(false)} style={{ color: '#f5a623', textDecoration: 'none', fontSize: '15px', padding: '8px 0' }}>Admin Panel</Link>}
-            {isDelivery && <Link to="/delivery/dashboard" onClick={() => setOpen(false)} style={{ color: '#f5a623', textDecoration: 'none', fontSize: '15px', padding: '8px 0' }}>Delivery Dashboard</Link>}
-            {user && !isAdmin && !isDelivery && <Link to="/orders" onClick={() => setOpen(false)} style={{ color: '#f5e6d0', textDecoration: 'none', fontSize: '15px', padding: '8px 0' }}>My Orders</Link>}
+        <div className="rs-mobile-panel">
+          <div className="rs-mobile-content">
+            <NavLink to="/" className={mobileLinkClass} onClick={closeMenu}>
+              <Home size={18} /> Home
+            </NavLink>
+            <NavLink to="/menu" className={mobileLinkClass} onClick={closeMenu}>
+              <ChefHat size={18} /> Menu
+            </NavLink>
+            {!isAdmin && !isDelivery && (
+              <NavLink to="/cart" className={mobileLinkClass} onClick={closeMenu}>
+                <ShoppingCart size={18} /> Cart ({totalItems})
+              </NavLink>
+            )}
+            {user && !isAdmin && !isDelivery && (
+              <NavLink to="/orders" className={mobileLinkClass} onClick={closeMenu}>
+                <Package size={18} /> My Orders
+              </NavLink>
+            )}
+            {isAdmin && (
+              <NavLink to="/admin" className={mobileLinkClass} onClick={closeMenu}>
+                <ShieldCheck size={18} /> Admin Panel
+              </NavLink>
+            )}
+            {isDelivery && (
+              <NavLink to="/delivery/dashboard" className={mobileLinkClass} onClick={closeMenu}>
+                <Truck size={18} /> Delivery Dashboard
+              </NavLink>
+            )}
+
             {user ? (
-              <button onClick={handleLogout} style={{ color: '#c8501a', background: 'none', border: 'none', fontSize: '15px', textAlign: 'left', padding: '8px 0', cursor: 'pointer' }}>Logout</button>
+              <button type="button" className="rs-mobile-logout" onClick={handleLogout}>
+                <LogOut size={18} /> Logout from {firstName}
+              </button>
             ) : (
-              <div className="flex gap-3 pt-2">
-                <Link to="/login" onClick={() => setOpen(false)} style={{ color: '#c8501a', textDecoration: 'none', fontSize: '14px' }}>Login</Link>
-                <Link to="/register" onClick={() => setOpen(false)} style={{ color: '#c8501a', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}>Sign Up</Link>
+              <div className="rs-mobile-auth">
+                <Link to="/login" onClick={closeMenu} className="rs-btn rs-btn-outline">Login</Link>
+                <Link to="/register" onClick={closeMenu} className="rs-btn rs-btn-primary">Sign Up</Link>
               </div>
             )}
           </div>

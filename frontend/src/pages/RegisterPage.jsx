@@ -19,60 +19,32 @@ export default function RegisterPage() {
       await api.post('/users/register', form);
       toast.success('OTP sent to your email!');
       navigate('/verify-otp', { state: { email: form.email } });
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Registration failed'); }
+    finally { setLoading(false); }
   };
 
-  const inputStyle = { width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(200,80,26,0.4)', borderRadius: '8px', color: '#fdf6ec', fontSize: '15px', outline: 'none', boxSizing: 'border-box' };
-  const labelStyle = { display: 'block', color: '#f5e6d0', fontSize: '14px', marginBottom: '8px', fontWeight: 500 };
-
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a0f05 0%, #3d2a15 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
-      <div style={{ width: '100%', maxWidth: '420px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <div style={{ background: '#c8501a', borderRadius: '10px', padding: '8px 12px' }}>
-              <span style={{ fontFamily: 'Playfair Display, serif', color: '#fff', fontSize: '20px', fontWeight: 700 }}>RS</span>
-            </div>
-            <span style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: '24px', fontWeight: 700 }}>MANI Café</span>
-          </div>
-          <p style={{ color: '#b8997a', fontSize: '14px' }}>Create your account</p>
+    <div className="auth-page">
+      <div className="auth-wrap animate-fade-up">
+        <div className="auth-brand">
+          <div className="auth-brand-row"><div className="auth-logo">RS</div><div className="auth-title">Join RS MANI</div></div>
+          <div className="auth-subtitle">Create your account and track every order easily</div>
         </div>
-
-        <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(200,80,26,0.3)', borderRadius: '16px', padding: '32px' }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Full Name</label>
-              <input type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Your full name" style={inputStyle} />
+        <div className="auth-card">
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field"><label>Full Name</label><input className="auth-input" type="text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Your full name" /></div>
+            <div className="auth-field"><label>Email Address</label><input className="auth-input" type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" /></div>
+            <div className="auth-field"><label>Phone Number</label><input className="auth-input" type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" /></div>
+            <div className="auth-field">
+              <label>Password</label>
+              <div className="auth-input-wrap">
+                <input className="auth-input auth-input-peek" type={showPass ? 'text' : 'password'} required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 6 characters" />
+                <button className="auth-eye" type="button" onClick={() => setShowPass(!showPass)}>{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+              </div>
             </div>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Email Address</label>
-              <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={labelStyle}>Phone Number</label>
-              <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 98765 43210" style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: '24px', position: 'relative' }}>
-              <label style={labelStyle}>Password</label>
-              <input type={showPass ? 'text' : 'password'} required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 6 characters" style={{ ...inputStyle, paddingRight: '44px' }} />
-              <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '40px', background: 'none', border: 'none', color: '#b8997a', cursor: 'pointer' }}>
-                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            <button type="submit" disabled={loading} style={{
-              width: '100%', padding: '13px', background: loading ? '#8a3d15' : '#c8501a',
-              color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
-            }}>
-              {loading ? 'Creating Account...' : 'Create Account'}
-            </button>
+            <button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Creating Account...' : 'Create Account'}</button>
           </form>
-          <p style={{ textAlign: 'center', marginTop: '20px', color: '#b8997a', fontSize: '14px' }}>
-            Already have an account? <Link to="/login" style={{ color: '#c8501a', textDecoration: 'none', fontWeight: 600 }}>Sign in</Link>
-          </p>
+          <p className="auth-link-row">Already have an account? <Link to="/login">Sign in</Link></p>
         </div>
       </div>
     </div>

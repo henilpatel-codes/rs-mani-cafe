@@ -1,49 +1,74 @@
 // pages/customer/HomePage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Clock, MapPin, ChevronRight, ShoppingBag } from 'lucide-react';
+import {
+  ArrowRight,
+  Bike,
+  ChevronRight,
+  Clock,
+  Coffee,
+  Heart,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Wallet,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import { useCart } from '../../context/CartContext';
-import toast from 'react-hot-toast';
 
-function MenuItemCard({ item, onAdd }) {
+const CATEGORIES = [
+  ['🥞', 'Dosas', 'Crispy & golden'],
+  ['🍚', 'Idli', 'Soft & steamed'],
+  ['☕', 'Beverages', 'Fresh sips'],
+  ['🍱', 'Combos', 'Value meals'],
+  ['🥨', 'Snacks', 'Quick bites'],
+  ['🍛', 'Rice', 'Comfort bowls'],
+];
+
+function normalizeList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function PopularItemCard({ item, onAdd }) {
+  const isVeg = item.isVeg !== false;
+
   return (
-    <div style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e8d5c0', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(200,80,26,0.15)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
-      <div style={{ height: '160px', background: item.image ? `url(${item.image}) center/cover` : 'linear-gradient(135deg, #f5e6d0, #e8d5c0)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-        {!item.image && <span style={{ fontSize: '40px' }}>🍽️</span>}
-        <div style={{ position: 'absolute', top: '10px', left: '10px', background: item.isVeg ? '#16a34a' : '#dc2626', color: '#fff', borderRadius: '4px', padding: '2px 8px', fontSize: '11px', fontWeight: 600 }}>
-          {item.isVeg ? '🌿 VEG' : '🥩 NON-VEG'}
-        </div>
-        {!item.isAvailable && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Unavailable</span>
-          </div>
+    <article className="menu-card">
+      <div className="menu-card-media">
+        {item.image ? (
+          <img src={item.image} alt={item.name} loading="lazy" />
+        ) : (
+          <div className="menu-card-placeholder">🍽️</div>
         )}
+        <span className={`rs-badge ${isVeg ? 'rs-badge-veg' : 'rs-badge-nonveg'} menu-card-badge`}>
+          {isVeg ? '● VEG' : '● NON-VEG'}
+        </span>
+        {!item.isAvailable && <div className="menu-card-overlay">UNAVAILABLE</div>}
       </div>
-      <div style={{ padding: '14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#1a0f05', margin: 0, flex: 1 }}>{item.name}</h3>
-          <span style={{ fontSize: '16px', fontWeight: 700, color: '#c8501a', marginLeft: '8px' }}>₹{item.price}</span>
+
+      <div className="menu-card-body">
+        <div className="menu-card-top">
+          <h3>{item.name}</h3>
+          <span className="menu-price">₹{item.price}</span>
         </div>
-        {item.description && <p style={{ fontSize: '12px', color: '#7c5c3e', marginBottom: '10px', lineHeight: '1.4' }}>{item.description}</p>}
-        {item.avgRating > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px' }}>
-            <Star size={12} fill="#f59e0b" color="#f59e0b" />
-            <span style={{ fontSize: '12px', color: '#7c5c3e' }}>{item.avgRating} ({item.reviewCount})</span>
+        {item.description && <p className="menu-desc">{item.description}</p>}
+        {Number(item.avgRating) > 0 && (
+          <div className="menu-rating">
+            <Star size={14} fill="#f5a623" color="#f5a623" />
+            <span>{item.avgRating} {item.reviewCount ? `(${item.reviewCount})` : ''}</span>
           </div>
         )}
-        <button onClick={() => onAdd(item)} disabled={!item.isAvailable} style={{
-          width: '100%', padding: '8px', background: item.isAvailable ? '#c8501a' : '#d4c4b0',
-          color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
-          cursor: item.isAvailable ? 'pointer' : 'not-allowed', transition: 'background 0.2s',
-        }}>
-          {item.isAvailable ? '+ Add to Cart' : 'Unavailable'}
+        <button type="button" className="menu-add" onClick={() => onAdd(item)} disabled={!item.isAvailable}>
+          <ShoppingBag size={17} /> {item.isAvailable ? 'Add to Cart' : 'Unavailable'}
         </button>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -54,10 +79,23 @@ export default function HomePage() {
   const { addItem } = useCart();
 
   useEffect(() => {
-    Promise.all([api.get('/menu/popular'), api.get('/settings')]).then(([menuRes, settingsRes]) => {
-      setPopular(menuRes.data);
-      setSettings(settingsRes.data);
-    }).catch(console.error).finally(() => setLoading(false));
+    let mounted = true;
+
+    Promise.all([api.get('/menu/popular'), api.get('/settings')])
+      .then(([menuRes, settingsRes]) => {
+        if (!mounted) return;
+        setPopular(normalizeList(menuRes.data).slice(0, 4));
+        setSettings(settingsRes.data?.data || settingsRes.data || null);
+      })
+      .catch((err) => {
+        console.error(err);
+        if (mounted) setPopular([]);
+      })
+      .finally(() => mounted && setLoading(false));
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const handleAdd = (item) => {
@@ -65,116 +103,174 @@ export default function HomePage() {
     toast.success(`${item.name} added to cart!`);
   };
 
+  const isOpen = settings?.isOpen !== false;
+
   return (
-    <div style={{ minHeight: '100vh', background: '#fdf6ec', fontFamily: 'DM Sans, sans-serif' }}>
+    <div className="rs-page">
       <Navbar />
 
-      {/* Hero */}
-      <section style={{ background: 'linear-gradient(135deg, #1a0f05 0%, #3d2a15 60%, #6b3d1e 100%)', padding: '80px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(200,80,26,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 50%, rgba(200,80,26,0.1) 0%, transparent 60%)' }} />
-        <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
-          {settings && !settings.isOpen && (
-            <div style={{ background: '#dc2626', color: '#fff', padding: '10px 20px', borderRadius: '8px', marginBottom: '20px', fontSize: '14px', fontWeight: 600, display: 'inline-block' }}>
-              🔴 Restaurant is currently CLOSED
+      <section className="home-hero">
+        <div className="hero-wrap">
+          <div className="hero-copy">
+            {!isOpen && (
+              <div className="rs-eyebrow" style={{ background: 'rgba(220,38,38,0.16)', color: '#ffb4b4', borderColor: 'rgba(255,180,180,0.22)' }}>
+                Restaurant is currently closed
+              </div>
+            )}
+            {isOpen && (
+              <div className="rs-eyebrow">
+                <Sparkles size={16} /> Fresh South Indian food, made daily
+              </div>
+            )}
+
+            <h1 className="hero-title">
+              Real café taste,<br />delivered <span>hot.</span>
+            </h1>
+            <p className="hero-desc">
+              Crispy dosas, fluffy idlis, comforting combos and fresh filter coffee from RS MANI Café. Order online, pay with COD or Razorpay, and track every order smoothly.
+            </p>
+
+            <div className="hero-actions">
+              <Link to="/menu" className="rs-btn rs-btn-primary">
+                <ShoppingBag size={19} /> Order Now
+              </Link>
+              <Link to="/menu" className="rs-btn rs-btn-secondary">
+                View Full Menu <ArrowRight size={18} />
+              </Link>
+            </div>
+
+            <div className="hero-stats" aria-label="Cafe highlights">
+              <div className="hero-stat">
+                <strong>Fresh</strong>
+                <span>Prepared after order</span>
+              </div>
+              <div className="hero-stat">
+                <strong>Fast</strong>
+                <span>{settings?.estimatedDeliveryTime || 30} min delivery</span>
+              </div>
+              <div className="hero-stat">
+                <strong>Secure</strong>
+                <span>COD & Razorpay</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-visual" aria-hidden="true">
+            <div className="hero-card-main">
+              <div className="hero-food-image">
+                <span className="hero-food-emoji">🥞</span>
+              </div>
+              <div className="hero-card-body">
+                <h3>Signature Masala Dosa</h3>
+                <p>Golden dosa with homely chutney and hot sambhar.</p>
+                <div className="hero-price-row">
+                  <span className="hero-price">₹99</span>
+                  <span className="rs-badge rs-badge-veg">● VEG</span>
+                </div>
+              </div>
+            </div>
+            <div className="hero-mini-card rs-glass">
+              <strong><Coffee size={17} /> Filter Coffee</strong>
+              <span>Freshly brewed café classic</span>
+            </div>
+            <div className="hero-rating-card rs-glass">
+              <strong><Star size={16} fill="#f5a623" color="#f5a623" /> 4.8 Rating</strong>
+              <span>Loved by regular customers</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="status-strip">
+        <div className="status-strip-inner">
+          <div className="status-pill">
+            <Clock size={16} color="#c8501a" />
+            <span>Est. delivery: <strong>{settings?.estimatedDeliveryTime || 30} min</strong></span>
+          </div>
+          <div className="status-pill">
+            <Bike size={16} color="#c8501a" />
+            <span>Free delivery above <strong>₹{settings?.freeDeliveryAbove || 299}</strong></span>
+          </div>
+          <div className={`status-pill ${isOpen ? 'status-open' : 'status-closed'}`}>
+            <span className="status-dot" />
+            <span>{isOpen ? 'Open Now' : 'Closed Now'}</span>
+          </div>
+          <div className="status-pill">
+            <Wallet size={16} color="#c8501a" />
+            <span>COD + Online Payment</span>
+          </div>
+        </div>
+      </div>
+
+      <section className="rs-section">
+        <div className="rs-container">
+          <div className="popular-header">
+            <div>
+              <span className="rs-eyebrow"><Heart size={15} /> Customer favourites</span>
+              <h2 className="rs-section-title" style={{ marginTop: 12 }}>Popular Items</h2>
+              <p className="rs-section-subtitle">Top picks that customers order again and again.</p>
+            </div>
+            <Link to="/menu" className="rs-btn rs-btn-outline">
+              See All <ChevronRight size={18} />
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="food-grid">
+              {[1, 2, 3, 4].map((i) => <div key={i} className="rs-skeleton" style={{ height: 360, borderRadius: 24 }} />)}
+            </div>
+          ) : popular.length > 0 ? (
+            <div className="food-grid">
+              {popular.map((item) => <PopularItemCard key={item._id || item.name} item={item} onAdd={handleAdd} />)}
+            </div>
+          ) : (
+            <div className="rs-empty">
+              <div className="rs-empty-icon"><ShoppingBag size={34} /></div>
+              <h3>No popular items yet</h3>
+              <p>Browse the full menu and add your favourite dishes.</p>
+              <Link to="/menu" className="rs-btn rs-btn-primary">Explore Menu</Link>
             </div>
           )}
-          <div style={{ display: 'inline-block', background: 'rgba(200,80,26,0.2)', border: '1px solid rgba(200,80,26,0.4)', borderRadius: '20px', padding: '6px 16px', marginBottom: '16px' }}>
-            <span style={{ color: '#f5a623', fontSize: '13px', fontWeight: 600 }}>🍛 Authentic South Indian Flavours</span>
-          </div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: 'clamp(36px, 6vw, 60px)', fontWeight: 700, lineHeight: '1.2', marginBottom: '16px' }}>
-            Welcome to<br /><span style={{ color: '#c8501a' }}>RS MANI Café</span>
-          </h1>
-          <p style={{ color: '#b8997a', fontSize: '16px', lineHeight: '1.6', marginBottom: '32px' }}>
-            Crispy dosas, fluffy idlis, and piping hot filter coffee.<br />Order online, track in real-time.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/menu" style={{ background: '#c8501a', color: '#fff', padding: '14px 28px', borderRadius: '10px', textDecoration: 'none', fontSize: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <ShoppingBag size={18} /> Order Now
-            </Link>
-            <Link to="/menu" style={{ background: 'transparent', color: '#fdf6ec', border: '1px solid rgba(253,246,236,0.4)', padding: '14px 28px', borderRadius: '10px', textDecoration: 'none', fontSize: '16px', fontWeight: 500 }}>
-              View Full Menu
-            </Link>
-          </div>
-          <div style={{ display: 'flex', gap: '24px', justifyContent: 'center', marginTop: '32px' }}>
-            {[['⚡', 'Fast Delivery'], ['🌿', '100% Fresh'], ['💳', 'Easy Payment']].map(([icon, text]) => (
-              <div key={text} style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '20px', marginBottom: '4px' }}>{icon}</div>
-                <div style={{ color: '#b8997a', fontSize: '12px' }}>{text}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* Info bar */}
-      {settings && (
-        <div style={{ background: '#fff', borderBottom: '1px solid #e8d5c0', padding: '12px 24px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#7c5c3e' }}>
-              <Clock size={14} color="#c8501a" />
-              <span>Est. delivery: <strong>{settings.estimatedDeliveryTime} min</strong></span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#7c5c3e' }}>
-              <ShoppingBag size={14} color="#c8501a" />
-              <span>Free delivery above <strong>₹{settings.freeDeliveryAbove}</strong></span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: settings.isOpen ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: settings.isOpen ? '#16a34a' : '#dc2626', display: 'inline-block' }} />
-              {settings.isOpen ? 'Open Now' : 'Closed'}
-            </div>
+      <section className="category-section" style={{ background: 'linear-gradient(135deg, #160b03, #2a1206)', padding: '58px 0' }}>
+        <div className="rs-container">
+          <div style={{ textAlign: 'center' }}>
+            <span className="rs-eyebrow" style={{ color: '#ffd28a', background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)' }}>
+              <ShieldCheck size={15} /> Quick category browsing
+            </span>
+            <h2 className="rs-section-title" style={{ color: '#fff8ef', marginTop: 12 }}>Browse by Category</h2>
+            <p className="rs-section-subtitle" style={{ color: '#c9aa8b' }}>Find your favourite meal faster.</p>
           </div>
-        </div>
-      )}
 
-      {/* Popular Items */}
-      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-          <div>
-            <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 700, color: '#1a0f05', marginBottom: '4px' }}>Popular Items</h2>
-            <p style={{ color: '#7c5c3e', fontSize: '14px' }}>Most loved by our customers</p>
-          </div>
-          <Link to="/menu" style={{ color: '#c8501a', textDecoration: 'none', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-            See All <ChevronRight size={16} />
-          </Link>
-        </div>
-        {loading ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-            {[1,2,3,4].map(i => <div key={i} style={{ height: '280px', background: '#e8d5c0', borderRadius: '12px', animation: 'pulse 1.5s infinite' }} />)}
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-            {popular.map(item => <MenuItemCard key={item._id} item={item} onAdd={handleAdd} />)}
-          </div>
-        )}
-      </section>
-
-      {/* Categories */}
-      <section style={{ background: '#1a0f05', padding: '48px 24px' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: '28px', fontWeight: 700, color: '#fdf6ec', marginBottom: '24px', textAlign: 'center' }}>Browse by Category</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px' }}>
-            {[['🥞', 'Dosas'], ['🍚', 'Idli'], ['☕', 'Beverages'], ['🍱', 'Combos'], ['🥨', 'Snacks'], ['🍛', 'Rice']].map(([icon, cat]) => (
-              <Link key={cat} to={`/menu?category=${cat}`} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,80,26,0.3)', borderRadius: '12px', padding: '20px', textAlign: 'center', textDecoration: 'none', transition: 'all 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(200,80,26,0.2)'; e.currentTarget.style.borderColor = '#c8501a'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(200,80,26,0.3)'; }}>
-                <div style={{ fontSize: '28px', marginBottom: '8px' }}>{icon}</div>
-                <div style={{ color: '#f5e6d0', fontSize: '13px', fontWeight: 600 }}>{cat}</div>
+          <div className="category-grid">
+            {CATEGORIES.map(([icon, cat, desc]) => (
+              <Link key={cat} to={`/menu?category=${cat}`} className="category-card">
+                <span className="category-icon">{icon}</span>
+                <span>
+                  <span className="category-name">{cat}</span>
+                  <small style={{ display: 'block', marginTop: 5, color: '#c9aa8b', fontWeight: 700 }}>{desc}</small>
+                </span>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: '#0d0802', color: '#b8997a', padding: '32px 24px', textAlign: 'center', fontSize: '13px' }}>
-        <p style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: '18px', marginBottom: '8px' }}>RS MANI Café</p>
-        <p>Authentic South Indian Restaurant</p>
-        {settings?.whatsappNumber && (
-          <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" rel="noreferrer" style={{ color: '#25D366', textDecoration: 'none', display: 'inline-block', marginTop: '8px' }}>
-            💬 WhatsApp: {settings.whatsappNumber}
-          </a>
-        )}
-        <p style={{ marginTop: '16px', color: '#5c4030' }}>© {new Date().getFullYear()} RS MANI Café. All rights reserved.</p>
+      <footer className="rs-footer">
+        <div className="rs-container">
+          <div className="rs-footer-brand">RS MANI Café</div>
+          <p>Authentic South Indian Restaurant • Fresh food • Fast service</p>
+          {settings?.whatsappNumber && (
+            <p style={{ marginTop: 10 }}>
+              <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" rel="noreferrer">
+                WhatsApp: {settings.whatsappNumber}
+              </a>
+            </p>
+          )}
+          <p style={{ marginTop: 18, color: '#6f5440' }}>© {new Date().getFullYear()} RS MANI Café. All rights reserved.</p>
+        </div>
       </footer>
     </div>
   );

@@ -21,42 +21,26 @@ export default function ResetPasswordPage() {
       await api.post(`/users/reset-password/${token}`, { password: form.password });
       toast.success('Password reset! Please log in.');
       navigate('/login');
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Reset failed. Link may have expired.');
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.message || 'Reset failed. Link may have expired.'); }
+    finally { setLoading(false); }
   };
 
-  const inputStyle = { width: '100%', padding: '12px 16px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(200,80,26,0.4)', borderRadius: '8px', color: '#fdf6ec', fontSize: '15px', outline: 'none', boxSizing: 'border-box' };
-
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #1a0f05 0%, #3d2a15 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'DM Sans, sans-serif' }}>
-      <div style={{ width: '100%', maxWidth: '380px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '8px' }}>🔒</div>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', color: '#fdf6ec', fontSize: '28px', fontWeight: 700 }}>Reset Password</h1>
-          <p style={{ color: '#b8997a', fontSize: '14px', marginTop: '8px' }}>Enter your new password below</p>
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,80,26,0.3)', borderRadius: '16px', padding: '32px' }}>
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '16px', position: 'relative' }}>
-              <label style={{ display: 'block', color: '#f5e6d0', fontSize: '14px', marginBottom: '8px', fontWeight: 500 }}>New Password</label>
-              <input type={showPass ? 'text' : 'password'} required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 6 characters" style={{ ...inputStyle, paddingRight: '44px' }} />
-              <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: '12px', top: '40px', background: 'none', border: 'none', color: '#b8997a', cursor: 'pointer' }}>
-                {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+    <div className="auth-page">
+      <div className="auth-wrap animate-fade-up">
+        <div className="auth-brand"><div style={{ fontSize: 46 }}>🔒</div><div className="auth-title">Reset Password</div><div className="auth-subtitle">Enter your new secure password below</div></div>
+        <div className="auth-card">
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-field">
+              <label>New Password</label>
+              <div className="auth-input-wrap">
+                <input className="auth-input auth-input-peek" type={showPass ? 'text' : 'password'} required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="At least 6 characters" />
+                <button className="auth-eye" type="button" onClick={() => setShowPass(!showPass)}>{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+              </div>
             </div>
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', color: '#f5e6d0', fontSize: '14px', marginBottom: '8px', fontWeight: 500 }}>Confirm Password</label>
-              <input type="password" required value={form.confirm} onChange={e => setForm({ ...form, confirm: e.target.value })} placeholder="Repeat new password" style={inputStyle} />
-            </div>
-            <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: '#c8501a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </button>
-            <p style={{ textAlign: 'center', marginTop: '16px' }}>
-              <Link to="/login" style={{ color: '#b8997a', fontSize: '14px', textDecoration: 'none' }}>← Back to Login</Link>
-            </p>
+            <div className="auth-field"><label>Confirm Password</label><input className="auth-input" type="password" required value={form.confirm} onChange={e => setForm({ ...form, confirm: e.target.value })} placeholder="Repeat new password" /></div>
+            <button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Resetting...' : 'Reset Password'}</button>
+            <p className="auth-link-row"><Link className="auth-secondary-link" to="/login">← Back to Login</Link></p>
           </form>
         </div>
       </div>
