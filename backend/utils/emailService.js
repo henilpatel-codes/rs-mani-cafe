@@ -13,6 +13,14 @@ const shouldSkipEmail = () => {
 const getTransporter = () => {
   if (shouldSkipEmail()) return null;
 
+  console.log('[EMAIL CONFIG]', {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    user: process.env.SMTP_USER ? 'set' : 'missing',
+    pass: process.env.SMTP_PASS ? 'set' : 'missing',
+    from: process.env.EMAIL_FROM,
+  });
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
     port: Number(process.env.SMTP_PORT) || 587,
@@ -29,7 +37,7 @@ const getTransporter = () => {
 };
 
 const getSenderEmail = () => {
-  return process.env.EMAIL_FROM || process.env.SMTP_SENDER || process.env.SMTP_USER;
+  return process.env.EMAIL_FROM || process.env.SMTP_USER;
 };
 
 const generateOTP = () => {
