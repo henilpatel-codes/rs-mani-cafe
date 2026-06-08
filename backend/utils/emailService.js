@@ -5,8 +5,8 @@ const shouldSkipEmail = () => {
   return (
     process.env.EMAIL_SKIP === 'true' ||
     process.env.SKIP_EMAIL === 'true' ||
-    !process.env.EMAIL_USER ||
-    !process.env.EMAIL_PASS
+    !process.env.SMTP_USER ||
+    !process.env.SMTP_PASS
   );
 };
 
@@ -14,18 +14,22 @@ const getTransporter = () => {
   if (shouldSkipEmail()) return null;
 
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
+    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+    port: Number(process.env.SMTP_PORT) || 587,
     secure: false,
     requireTLS: true,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
     connectionTimeout: 20000,
     greetingTimeout: 20000,
     socketTimeout: 20000,
   });
+};
+
+const getSenderEmail = () => {
+  return process.env.EMAIL_FROM || process.env.SMTP_SENDER || process.env.SMTP_USER;
 };
 
 const generateOTP = () => {
@@ -52,7 +56,7 @@ const sendOTPEmail = async (email, name, otp) => {
   try {
     await sendWithTimeout(
       transporter.sendMail({
-        from: `"RS MANI Café" <${process.env.EMAIL_USER}>`,
+        from: `"RS MANI Café" <${getSenderEmail()}>`,
         to: email,
         subject: 'Your OTP - RS MANI Café',
         html: `
@@ -87,7 +91,7 @@ const sendPasswordResetEmail = async (email, name, resetLink) => {
   try {
     await sendWithTimeout(
       transporter.sendMail({
-        from: `"RS MANI Café" <${process.env.EMAIL_USER}>`,
+        from: `"RS MANI Café" <${getSenderEmail()}>`,
         to: email,
         subject: 'Password Reset - RS MANI Café',
         html: `
