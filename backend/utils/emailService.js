@@ -14,24 +14,29 @@ const getTransporter = () => {
   if (shouldSkipEmail()) return null;
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 20000,
   });
 };
 
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
 const sendWithTimeout = async (mailPromise) => {
   return Promise.race([
     mailPromise,
     new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Email sending timeout')), 12000)
+      setTimeout(() => reject(new Error('Email sending timeout')), 25000)
     ),
   ]);
 };
@@ -57,7 +62,8 @@ const sendOTPEmail = async (email, name, otp) => {
             <p>Your one-time password (OTP) for account verification is:</p>
             <div style="font-size:36px;font-weight:bold;color:#c8501a;letter-spacing:8px;text-align:center;padding:16px 0;">${otp}</div>
             <p style="color:#666;font-size:13px;">This OTP expires in 10 minutes. Do not share it with anyone.</p>
-          </div>`,
+          </div>
+        `,
       })
     );
 
@@ -91,7 +97,8 @@ const sendPasswordResetEmail = async (email, name, resetLink) => {
             <p>Click the button below to reset your password. This link expires in 1 hour.</p>
             <a href="${resetLink}" style="display:inline-block;margin:16px 0;padding:12px 24px;background:#c8501a;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">Reset Password</a>
             <p style="color:#666;font-size:13px;">If you did not request this, please ignore this email.</p>
-          </div>`,
+          </div>
+        `,
       })
     );
 
@@ -104,4 +111,8 @@ const sendPasswordResetEmail = async (email, name, resetLink) => {
   }
 };
 
-module.exports = { generateOTP, sendOTPEmail, sendPasswordResetEmail };
+module.exports = {
+  generateOTP,
+  sendOTPEmail,
+  sendPasswordResetEmail,
+};
