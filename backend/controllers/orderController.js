@@ -20,6 +20,13 @@ const placeOrder = async (req, res) => {
     if (settings && !settings.isOpen) {
       return res.status(400).json({ message: 'Restaurant is currently closed. Please try again later.' });
     }
+    // COD availability check
+    if (paymentMethod === 'cod' && settings?.codEnabled === false) {
+      return res.status(400).json({
+        message: 'Cash on Delivery is currently not available. Please pay online.',
+      });
+    }
+    
 
     // Minimum order amount check
     if (settings?.minOrderAmount > 0) {

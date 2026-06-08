@@ -9,8 +9,10 @@ export default function AdminSettings() {
   const [form, setForm] = useState({
     restaurantName: '', phone: '', address: '', whatsappNumber: '',
     gstPercentage: 5, deliveryCharge: 30, freeDeliveryAbove: 500,
-    estimatedDeliveryTime: 30, isOpen: true,
-    minOrderAmount: 0, servicedPincodes: '',
+    estimatedDeliveryTime: 30,
+    minOrderAmount: 0,
+    servicedPincodes: '',
+    codEnabled: true,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,22 +58,6 @@ export default function AdminSettings() {
     <AdminLayout title="Settings">
       <form onSubmit={handleSave} style={{ maxWidth: '680px' }}>
 
-        {/* Restaurant Status */}
-        <Card title="Restaurant Status">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: form.isOpen ? '#f0fdf4' : '#fef2f2', borderRadius: '10px', border: `1px solid ${form.isOpen ? '#bbf7d0' : '#fecaca'}` }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '15px', color: form.isOpen ? '#15803d' : '#dc2626' }}>
-                {form.isOpen ? '🟢 Restaurant is OPEN' : '🔴 Restaurant is CLOSED'}
-              </div>
-              <div style={{ fontSize: '12px', color: '#7c5c3e', marginTop: '2px' }}>Toggle to accept or pause new orders</div>
-            </div>
-            <button type="button" onClick={() => setForm(f => ({ ...f, isOpen: !f.isOpen }))}
-              style={{ padding: '8px 20px', background: form.isOpen ? '#dc2626' : '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>
-              {form.isOpen ? 'Close Now' : 'Open Now'}
-            </button>
-          </div>
-        </Card>
-
         {/* Restaurant Info */}
         <Card title="Restaurant Information">
           <div style={{ display: 'grid', gap: '14px' }}>
@@ -115,6 +101,37 @@ export default function AdminSettings() {
           </div>
         </Card>
 
+        {/* Payment Options */}
+        <Card title="Payment Options">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', background: form.codEnabled ? '#f0fdf4' : '#fef2f2', borderRadius: '10px', border: `1px solid ${form.codEnabled ? '#bbf7d0' : '#fecaca'}` }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '15px', color: form.codEnabled ? '#15803d' : '#dc2626' }}>
+                {form.codEnabled ? 'Cash on Delivery is ENABLED' : 'Cash on Delivery is DISABLED'}
+              </div>
+              <div style={{ fontSize: '12px', color: '#7c5c3e', marginTop: '2px' }}>
+                Turn off COD to accept online payments only.
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, codEnabled: !prev.codEnabled }))}
+              style={{
+                padding: '8px 20px',
+                background: form.codEnabled ? '#dc2626' : '#16a34a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '13px'
+              }}
+            >
+              {form.codEnabled ? 'Disable COD' : 'Enable COD'}
+            </button>
+          </div>
+        </Card>
+
         {/* Delivery Zones */}
         <Card title="Delivery Zones">
           <div>
@@ -142,6 +159,7 @@ export default function AdminSettings() {
             <span>Free above: <strong>₹{form.freeDeliveryAbove}</strong></span>
             <span>ETA: <strong>{form.estimatedDeliveryTime} min</strong></span>
             <span>Min order: <strong>₹{form.minOrderAmount}</strong></span>
+            <span>COD: <strong>{form.codEnabled ? 'Enabled' : 'Disabled'}</strong></span>
           </div>
         </div>
 

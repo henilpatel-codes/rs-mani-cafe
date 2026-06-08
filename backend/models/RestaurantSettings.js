@@ -12,9 +12,14 @@ const settingsSchema = new mongoose.Schema(
     phone: { type: String, default: '' },
     address: { type: String, default: '' },
     whatsappNumber: { type: String, default: '' },
-    // New practical fields
+     // New practical fields
     minOrderAmount: { type: Number, default: 0 },
     servicedPincodes: { type: String, default: '' }, // comma-separated list, empty = all allowed
+    codEnabled: { type: Boolean, default: true },
+    codDisabledReason: {
+      type: String,
+      default: 'Cash on Delivery is temporarily unavailable. Please pay online.',
+    },
   },
   { timestamps: true }
 );
