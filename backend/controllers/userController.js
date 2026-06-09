@@ -257,18 +257,32 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// @route PUT /api/users/:userId/favorites/:itemId
 const toggleFavorite = async (req, res) => {
   try {
     const { userId, itemId } = req.params;
 
+    if (req.user?.id !== userId) {
+      return res.status(403).json({
+        message: 'Not allowed to update these favorites',
+      });
+    }
+
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const isFav = user.favorites.some((id) => id.toString() === itemId);
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found',
+      });
+    }
 
-    if (isFav) {
-      user.favorites = user.favorites.filter((id) => id.toString() !== itemId);
+    const isFavorite = user.favorites.some(
+      (favId) => favId.toString() === itemId
+    );
+
+    if (isFavorite) {
+      user.favorites = user.favorites.filter(
+        (favId) => favId.toString() !== itemId
+      );
     } else {
       user.favorites.push(itemId);
     }
@@ -277,7 +291,7 @@ const toggleFavorite = async (req, res) => {
 
     return res.json({
       favorites: user.favorites,
-      added: !isFav,
+      isFavorite: !isFavorite,
     });
   } catch (err) {
     console.error('[TOGGLE FAVORITE ERROR]', err.message);
