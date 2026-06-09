@@ -146,6 +146,7 @@ const placeOrder = async (req, res) => {
 
     let discountAmount = 0;
     let appliedCoupon = null;
+    let appliedCouponId = null;
 
     if (couponCode) {
       const coupon = await Coupon.findOne({
@@ -182,11 +183,8 @@ const placeOrder = async (req, res) => {
 
       discountAmount = Math.round(discountAmount);
 
-      await Coupon.findByIdAndUpdate(coupon._id, {
-        $inc: { usedCount: 1 },
-      });
-
       appliedCoupon = coupon.code;
+      appliedCouponId = coupon._id;
     }
 
     const gstAmount = Math.round(((subtotal - discountAmount) * gstPct) / 100);
@@ -261,6 +259,12 @@ const placeOrder = async (req, res) => {
       razorpayOrderId: finalRazorpayOrderId,
       estimatedTime: settings?.estimatedDeliveryTime || 30,
     });
+
+    if (appliedCouponId) {
+      await Coupon.findByIdAndUpdate(appliedCouponId, {
+        $inc: { usedCount: 1 },
+      });
+    }
 
     const notification = await Notification.create({
       orderId: order._id,
