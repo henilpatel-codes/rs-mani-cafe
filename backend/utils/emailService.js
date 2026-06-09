@@ -1,214 +1,219 @@
-// utils/emailService.js — RS MANI Café
-// Real Gmail delivery via Nodemailer + App Password
-//
-// Return shape (always an object, never throws):
-//   { success: true,  sent: true }                         — email delivered
-//   { success: true,  skipped: true }                      — EMAIL_SKIP=true (dev mode)
-//   { success: true,  fallback: true }                     — env vars missing
-//   { success: false, fallback: true, error: "..." }       — Gmail failed, OTP logged
+﻿const nodemailer = require('nodemailer');
 
-const nodemailer = require('nodemailer');
+const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
 
-// ── Transporter (built only when credentials exist) ───────────────────────────
-const getTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return null;
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
-  return nodemailer.createTransport({
+const isEmailDisabled = () => {
+  return process.env.EMAIL_SKIP === 'true' || process.env.SKIP_EMAIL === 'true';
+};
+
+const getFromEmail = () => {
+  return (
+    process.env.EMAIL_FROM_EMAIL ||
+    process.env.EMAIL_FROM ||
+    process.env.EMAIL_USER ||
+    process.env.SMTP_USER ||
+    ''
+  );
+};
+
+const getFromName = () => {
+  return process.env.EMAIL_FROM_NAME || 'RS MANI Cafe';
+};
+
+const buildOTPHtml = (name, otp) => `
+  <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.10);">
+    <div style="background:#c8501a;padding:28px 32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:22px;">RS MANI Cafe</h1>
+    </div>
+    <div style="background:#fdf6ec;padding:32px;">
+      <h2 style="margin:0 0 16px;color:#c8501a;">Verify Your Account</h2>
+      <p style="color:#333;">Hi <strong>${name || 'Customer'}</strong>,</p>
+      <p style="color:#555;line-height:1.6;">Use this OTP to verify your RS MANI Cafe account:</p>
+      <div style="font-size:34px;font-weight:bold;letter-spacing:8px;text-align:center;background:#fff;border:2px dashed #c8501a;color:#c8501a;border-radius:10px;padding:16px;margin:24px 0;">
+        ${otp}
+      </div>
+      <p style="color:#777;font-size:13px;">Valid for 10 minutes. Do not share this OTP with anyone.</p>
+    </div>
+    <div style="background:#f0e0d0;padding:14px;text-align:center;">
+      <p style="margin:0;color:#999;font-size:11px;">Do not reply to this email</p>
+    </div>
+  </div>
+`;
+
+let brevoClient = null;
+
+const getBrevoClient = async () => {
+  if (brevoClient) return brevoClient;
+
+  if (!process.env.BREVO_API_KEY) {
+    throw new Error('BREVO_API_KEY is missing');
+  }
+
+  const { BrevoClient } = await import('@getbrevo/brevo');
+
+  brevoClient = new BrevoClient({
+    apiKey: process.env.BREVO_API_KEY,
+    timeoutInSeconds: 30,
+    maxRetries: 1,
+  });
+
+  return brevoClient;
+};
+
+const sendWithBrevo = async ({ email, name, subject, html, text }) => {
+  const fromEmail = getFromEmail();
+
+  if (!fromEmail) {
+    throw new Error('EMAIL_FROM_EMAIL is missing');
+  }
+
+  const brevo = await getBrevoClient();
+
+  const result = await brevo.transactionalEmails.sendTransacEmail({
+    sender: {
+      name: getFromName(),
+      email: fromEmail,
+    },
+    to: [
+      {
+        email,
+        name: name || email,
+      },
+    ],
+    subject,
+    htmlContent: html,
+    textContent: text,
+  });
+
+  console.log(`[EMAIL SENT] Brevo email sent to ${email}`);
+  return result;
+};
+
+let gmailTransporter = null;
+
+const getGmailTransporter = () => {
+  if (gmailTransporter) return gmailTransporter;
+
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error('EMAIL_USER or EMAIL_PASS is missing');
+  }
+
+  gmailTransporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS, // 16-char App Password, no spaces
+      pass: process.env.EMAIL_PASS,
     },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 15000,
   });
+
+  return gmailTransporter;
 };
 
-// ── Startup SMTP check — call once after server boots ─────────────────────────
-// Does NOT throw. Logs result clearly. Returns true/false.
-const verifyEmailConnection = async () => {
-  const skip =
-    process.env.EMAIL_SKIP === 'true' || process.env.SKIP_EMAIL === 'true';
-  if (skip) {
-    console.log('[emailService] EMAIL_SKIP=true — SMTP verify skipped (dev mode).');
-    return false;
-  }
+const sendWithGmail = async ({ email, subject, html, text }) => {
+  const transporter = getGmailTransporter();
 
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn(
-      '\n[emailService] ⚠️  EMAIL_USER or EMAIL_PASS is missing.' +
-      '\n  OTP emails will NOT reach users.' +
-      '\n  → Add both vars in Render Dashboard → Environment\n'
-    );
-    return false;
-  }
+  const info = await transporter.sendMail({
+    from: `"${getFromName()}" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject,
+    html,
+    text,
+  });
 
-  try {
-    await getTransporter().verify();
-    console.log('[emailService] ✅ Gmail SMTP verified — emails will be delivered.');
-    return true;
-  } catch (err) {
-    console.error(
-      `\n[emailService] ❌ Gmail SMTP verify FAILED: ${err.message}` +
-      '\n  Fix checklist:' +
-      '\n  1. EMAIL_PASS must be an App Password, not your Gmail login password' +
-      '\n     → myaccount.google.com/apppasswords' +
-      '\n  2. 2-Step Verification must be ON first' +
-      '\n     → myaccount.google.com/security' +
-      '\n  3. EMAIL_PASS must have no spaces (paste 16 chars directly)' +
-      '\n  4. EMAIL_USER must be the full Gmail address\n'
-    );
-    return false;
-  }
+  console.log(`[EMAIL SENT] Gmail email sent to ${email} (${info.messageId})`);
+  return info;
 };
 
-// ── generateOTP ───────────────────────────────────────────────────────────────
-const generateOTP = () =>
-  Math.floor(100000 + Math.random() * 900000).toString();
+const sendMail = async ({ email, name, subject, html, text }) => {
+  if (isEmailDisabled()) {
+    throw new Error('Email sending disabled. Set EMAIL_SKIP=false and SKIP_EMAIL=false');
+  }
 
-// ── OTP email HTML ────────────────────────────────────────────────────────────
-const buildOTPHtml = (name, otp) => `
-  <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;
-              border-radius:12px;overflow:hidden;
-              box-shadow:0 4px 16px rgba(0,0,0,0.10);">
-    <div style="background:#c8501a;padding:28px 32px;text-align:center;">
-      <h1 style="margin:0;color:#fff;font-size:22px;letter-spacing:1px;">☕ RS MANI Café</h1>
-    </div>
-    <div style="background:#fdf6ec;padding:32px;">
-      <p style="margin:0 0 12px;color:#333;font-size:16px;">Hi <strong>${name}</strong>,</p>
-      <p style="margin:0 0 24px;color:#555;font-size:15px;line-height:1.6;">
-        Your one-time password (OTP) for account verification is:
-      </p>
-      <div style="text-align:center;margin:0 0 28px;">
-        <span style="display:inline-block;background:#fff;border:2px dashed #c8501a;
-                     border-radius:10px;padding:16px 40px;font-size:38px;
-                     font-weight:bold;color:#c8501a;letter-spacing:10px;">
-          ${otp}
-        </span>
-      </div>
-      <p style="margin:0 0 8px;color:#555;font-size:14px;">
-        ⏱ Valid for <strong>10 minutes</strong>. Do not share this with anyone.
-      </p>
-      <p style="margin:0;color:#999;font-size:12px;">
-        If you did not sign up at RS MANI Café, please ignore this email.
-      </p>
-    </div>
-    <div style="background:#f0e0d0;padding:14px 32px;text-align:center;">
-      <p style="margin:0;color:#999;font-size:11px;">
-        © ${new Date().getFullYear()} RS MANI Café · Do not reply to this email
-      </p>
-    </div>
-  </div>
-`;
+  if (EMAIL_PROVIDER === 'brevo') {
+    return sendWithBrevo({ email, name, subject, html, text });
+  }
 
-// ── sendOTPEmail ──────────────────────────────────────────────────────────────
-// Signature: sendOTPEmail(email, name, otp)
-// Always returns an object — never throws — controller decides what to show user
-//
-// Return values:
-//   { success: true,  sent: true }                    — Gmail delivered ✅
-//   { success: true,  skipped: true }                 — EMAIL_SKIP=true (dev)
-//   { success: true,  fallback: true }                — missing env vars
-//   { success: false, fallback: true, error: string } — Gmail failed, OTP logged
-//
+  if (EMAIL_PROVIDER === 'gmail' || EMAIL_PROVIDER === 'smtp') {
+    return sendWithGmail({ email, name, subject, html, text });
+  }
+
+  throw new Error(`Unsupported EMAIL_PROVIDER: ${EMAIL_PROVIDER}`);
+};
+
 const sendOTPEmail = async (email, name, otp) => {
-  // ── Dev skip mode ────────────────────────────────────────────────────────
-  if (process.env.EMAIL_SKIP === 'true' || process.env.SKIP_EMAIL === 'true') {
-    console.log(`[EMAIL SKIP] OTP for ${email}: ${otp}`);
-    return { success: true, skipped: true };
-  }
-
-  // ── Missing credentials ──────────────────────────────────────────────────
-  const transporter = getTransporter();
-  if (!transporter) {
-    console.warn(`[EMAIL SKIP] No credentials — OTP for ${email}: ${otp}`);
-    return { success: true, fallback: true };
-  }
-
-  // ── Attempt real Gmail send ──────────────────────────────────────────────
   try {
-    const info = await transporter.sendMail({
-      from: `"RS MANI Café" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'Your OTP – RS MANI Café',
+    await sendMail({
+      email,
+      name,
+      subject: 'Your OTP - RS MANI Cafe',
       html: buildOTPHtml(name, otp),
-      text: `Hi ${name},\n\nYour RS MANI Café OTP is: ${otp}\n\nValid for 10 minutes. Do not share it.\n\nRS MANI Café`,
+      text: `Hi ${name || 'Customer'}, your RS MANI Cafe OTP is: ${otp}. Valid for 10 minutes.`,
     });
 
-    console.log(`[EMAIL SENT] OTP sent to ${email} (${info.messageId})`);
     return { success: true, sent: true };
-
   } catch (err) {
-    // Gmail failed — log OTP so team can still debug/test
     console.error(`[EMAIL ERROR] Failed to send OTP to ${email}: ${err.message}`);
-    console.log(`[EMAIL FALLBACK] OTP for ${email}: ${otp}`);
-    return { success: false, fallback: true, error: err.message };
+    return { success: false, error: err.message };
   }
 };
 
-// ── sendPasswordResetEmail ────────────────────────────────────────────────────
-// Signature kept: sendPasswordResetEmail(email, name, resetLink)
-// Returns same shape as sendOTPEmail for consistency
-//
 const sendPasswordResetEmail = async (email, name, resetLink) => {
-  if (process.env.EMAIL_SKIP === 'true' || process.env.SKIP_EMAIL === 'true') {
-    console.log(`[EMAIL SKIP] Reset link for ${email}: ${resetLink}`);
-    return { success: true, skipped: true };
-  }
-
-  const transporter = getTransporter();
-  if (!transporter) {
-    console.log(`[EMAIL SKIP] No credentials — Reset link for ${email}: ${resetLink}`);
-    return { success: true, fallback: true };
-  }
-
   try {
-    const info = await transporter.sendMail({
-      from: `"RS MANI Café" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: 'Password Reset – RS MANI Café',
+    await sendMail({
+      email,
+      name,
+      subject: 'Password Reset - RS MANI Cafe',
       html: `
-        <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;
-                    border-radius:12px;overflow:hidden;
-                    box-shadow:0 4px 16px rgba(0,0,0,0.10);">
-          <div style="background:#c8501a;padding:28px 32px;text-align:center;">
-            <h1 style="margin:0;color:#fff;font-size:22px;">☕ RS MANI Café</h1>
-          </div>
-          <div style="background:#fdf6ec;padding:32px;">
-            <h2 style="margin:0 0 16px;color:#c8501a;">Password Reset</h2>
-            <p style="color:#333;">Hi <strong>${name}</strong>,</p>
-            <p style="color:#555;line-height:1.6;">
-              Click below to reset your password. This link expires in <strong>1 hour</strong>.
-            </p>
-            <div style="text-align:center;margin:24px 0;">
-              <a href="${resetLink}"
-                 style="padding:14px 32px;background:#c8501a;color:#fff;
-                        border-radius:8px;text-decoration:none;font-weight:bold;">
-                Reset My Password
-              </a>
-            </div>
-            <p style="color:#999;font-size:12px;">
-              If you did not request this, please ignore this email.
-            </p>
-          </div>
-          <div style="background:#f0e0d0;padding:14px;text-align:center;">
-            <p style="margin:0;color:#999;font-size:11px;">
-              © ${new Date().getFullYear()} RS MANI Café · Do not reply
-            </p>
-          </div>
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;">
+          <h2>Password Reset - RS MANI Cafe</h2>
+          <p>Hi ${name || 'Customer'},</p>
+          <p>Click below to reset your password:</p>
+          <p><a href="${resetLink}">Reset Password</a></p>
+          <p>If you did not request this, ignore this email.</p>
         </div>
       `,
-      text: `Hi ${name},\n\nReset your password: ${resetLink}\n\nExpires in 1 hour.\n\nRS MANI Café`,
+      text: `Hi ${name || 'Customer'}, reset your password here: ${resetLink}`,
     });
 
-    console.log(`[EMAIL SENT] Reset email sent to ${email} (${info.messageId})`);
     return { success: true, sent: true };
-
   } catch (err) {
     console.error(`[EMAIL ERROR] Failed to send reset email to ${email}: ${err.message}`);
-    console.log(`[EMAIL FALLBACK] Reset link for ${email}: ${resetLink}`);
-    return { success: false, fallback: true, error: err.message };
+    return { success: false, error: err.message };
+  }
+};
+
+const verifyEmailConnection = async () => {
+  if (isEmailDisabled()) {
+    console.warn('[emailService] Email disabled. Set EMAIL_SKIP=false and SKIP_EMAIL=false');
+    return false;
+  }
+
+  try {
+    if (EMAIL_PROVIDER === 'brevo') {
+      if (!process.env.BREVO_API_KEY) throw new Error('BREVO_API_KEY is missing');
+      if (!getFromEmail()) throw new Error('EMAIL_FROM_EMAIL is missing');
+
+      console.log('[emailService] Brevo API configured - emails will be delivered.');
+      return true;
+    }
+
+    if (EMAIL_PROVIDER === 'gmail' || EMAIL_PROVIDER === 'smtp') {
+      await getGmailTransporter().verify();
+      console.log('[emailService] Gmail SMTP verified - emails will be delivered.');
+      return true;
+    }
+
+    throw new Error(`Unsupported EMAIL_PROVIDER: ${EMAIL_PROVIDER}`);
+  } catch (err) {
+    console.error(`[emailService] Email verification failed: ${err.message}`);
+    return false;
   }
 };
 

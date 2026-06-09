@@ -1,4 +1,4 @@
-// controllers/userController.js — Roles, OTP, forgot password
+// controllers/userController.js â€” Roles, OTP, forgot password
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
@@ -52,11 +52,16 @@ const registerUser = async (req, res) => {
 
     const emailResult = await sendOTPEmail(email, name, otp);
 
+    if (!emailResult?.success) {
+      await User.deleteOne({ email });
+
+      return res.status(502).json({
+        message: 'Unable to send OTP email right now. Please try again later.',
+      });
+    }
+
     return res.status(201).json({
-      message:
-        emailResult?.skipped || emailResult?.fallback
-          ? 'Account created. OTP is available in server logs. Please verify.'
-          : 'OTP sent to your email. Please verify.',
+      message: 'OTP sent to your email. Please verify.',
       email,
       requiresOTP: true,
     });
@@ -111,11 +116,14 @@ const resendOTP = async (req, res) => {
 
     const emailResult = await sendOTPEmail(email, user.name, otp);
 
+    if (!emailResult?.success) {
+      return res.status(502).json({
+        message: 'Unable to send OTP email right now. Please try again later.',
+      });
+    }
+
     return res.json({
-      message:
-        emailResult?.skipped || emailResult?.fallback
-          ? 'New OTP is available in server logs'
-          : 'New OTP sent to your email',
+      message: 'New OTP sent to your email',
     });
   } catch (err) {
     console.error('[RESEND OTP ERROR]', err.message);
@@ -175,11 +183,14 @@ const forgotPassword = async (req, res) => {
 
     const emailResult = await sendPasswordResetEmail(email, user.name, resetLink);
 
+    if (!emailResult?.success) {
+      return res.status(502).json({
+        message: 'Unable to send password reset email right now. Please try again later.',
+      });
+    }
+
     return res.json({
-      message:
-        emailResult?.skipped || emailResult?.fallback
-          ? 'Password reset link is available in server logs'
-          : 'Password reset link sent to your email',
+      message: 'Password reset link sent to your email',
     });
   } catch (err) {
     console.error('[FORGOT PASSWORD ERROR]', err.message);
