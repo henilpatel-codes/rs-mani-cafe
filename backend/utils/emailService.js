@@ -1,10 +1,12 @@
 // utils/emailService.js — OTP and password reset emails
 const nodemailer = require('nodemailer');
 
+const isTrue = (value) => String(value).toLowerCase() === 'true';
+
 const shouldSkipEmail = () => {
   return (
-    process.env.EMAIL_SKIP === 'true' ||
-    process.env.SKIP_EMAIL === 'true' ||
+    isTrue(process.env.EMAIL_SKIP) ||
+    isTrue(process.env.SKIP_EMAIL) ||
     !process.env.EMAIL_USER ||
     !process.env.EMAIL_PASS
   );
@@ -14,32 +16,46 @@ const getTransporter = () => {
   if (shouldSkipEmail()) return null;
 
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: Number(process.env.SMTP_PORT) || 465,
+    secure: isTrue(process.env.SMTP_SECURE || 'true'),
+
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
+
+    // Important for Render: do not hang for minutes
     connectionTimeout: 10000,
     greetingTimeout: 10000,
     socketTimeout: 10000,
   });
 };
 
+const getEmailFrom = () => {
+  return process.env.EMAIL_FROM || `"RS MANI Café" <${process.env.EMAIL_USER}>`;
+};
+
 const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-const sendOTPEmail = async (email, name, otp) => {
+const sendOTPEmail = async (email, name = 'Customer', otp) => {
+  if (!otp) {
+    console.log(`[EMAIL SKIP] OTP missing for ${email}`);
+    return { success: false, skipped: true, error: 'OTP missing' };
+  }
+
   const transporter = getTransporter();
 
   if (!transporter) {
     console.log(`[EMAIL SKIP] OTP for ${email}: ${otp}`);
-    return true;
+    return { success: true, skipped: true };
   }
 
   try {
     await transporter.sendMail({
-      from: `"RS MANI Café" <${process.env.EMAIL_USER}>`,
+      from: getEmailFrom(),
       to: email,
       subject: 'Your OTP - RS MANI Café',
       html: `
@@ -54,25 +70,32 @@ const sendOTPEmail = async (email, name, otp) => {
     });
 
     console.log(`[EMAIL SENT] OTP sent to ${email}`);
-    return true;
+    return { success: true, sent: true };
   } catch (error) {
-    console.error(`[EMAIL ERROR] Failed to send OTP to ${email}:`, error.message);
+    console.error(`[EMAIL ERROR] Failed to send OTP to ${email}: ${error.message}`);
     console.log(`[EMAIL FALLBACK] OTP for ${email}: ${otp}`);
-    return true;
+
+    // Important: never throw, otherwise registration will fail
+    return { success: false, fallback: true, error: error.message };
   }
 };
 
-const sendPasswordResetEmail = async (email, name, resetLink) => {
+const sendPasswordResetEmail = async (email, name = 'Customer', resetLink) => {
+  if (!resetLink) {
+    console.log(`[EMAIL SKIP] Reset link missing for ${email}`);
+    return { success: false, skipped: true, error: 'Reset link missing' };
+  }
+
   const transporter = getTransporter();
 
   if (!transporter) {
     console.log(`[EMAIL SKIP] Reset link for ${email}: ${resetLink}`);
-    return true;
+    return { success: true, skipped: true };
   }
 
   try {
     await transporter.sendMail({
-      from: `"RS MANI Café" <${process.env.EMAIL_USER}>`,
+      from: getEmailFrom(),
       to: email,
       subject: 'Password Reset - RS MANI Café',
       html: `
@@ -87,11 +110,13 @@ const sendPasswordResetEmail = async (email, name, resetLink) => {
     });
 
     console.log(`[EMAIL SENT] Reset email sent to ${email}`);
-    return true;
+    return { success: true, sent: true };
   } catch (error) {
-    console.error(`[EMAIL ERROR] Failed to send reset email to ${email}:`, error.message);
+    console.error(`[EMAIL ERROR] Failed to send reset email to ${email}: ${error.message}`);
     console.log(`[EMAIL FALLBACK] Reset link for ${email}: ${resetLink}`);
-    return true;
+
+    // Important: never throw
+    return { success: false, fallback: true, error: error.message };
   }
 };
 
