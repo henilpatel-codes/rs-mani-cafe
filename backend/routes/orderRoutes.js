@@ -20,7 +20,7 @@ router.get('/export/csv', protect, adminOnly, exportDailyCSV);
 router.get('/', protect, adminOnly, getAllOrders);
 
 // Public order tracking route
-router.get('/:id', getOrderById);
+router.get('/:id', protect, getOrderById);
 
 // Customer order route
 router.post('/', protect, customerOnly, placeOrder);

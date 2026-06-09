@@ -324,6 +324,23 @@ const getOrderById = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    const isAdmin = req.user?.role === 'admin';
+
+    const isOwner =
+      order.userId && order.userId.toString() === req.user?.id;
+
+    const isAssignedDelivery =
+      req.user?.role === 'delivery' &&
+      order.deliveryBoy &&
+      order.deliveryBoy._id &&
+      order.deliveryBoy._id.toString() === req.user?.id;
+
+    if (!isAdmin && !isOwner && !isAssignedDelivery) {
+      return res.status(403).json({
+        message: 'Not allowed to view this order',
+      });
+    }
+
     res.json(order);
   } catch (err) {
     res.status(500).json({ message: err.message });
