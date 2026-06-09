@@ -161,11 +161,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (form.paymentMethod === 'cod' && settings?.codEnabled === false) {
-      toast.error(
-        settings?.codDisabledReason ||
-          'Cash on Delivery is currently not available. Please pay online.'
-      );
+    if (form.orderType === 'delivery' && form.paymentMethod === 'cod' && settings?.codEnabled === false) {
+      toast.error(settings?.codDisabledReason || 'Cash on Delivery is currently not available for delivery orders. Please pay online.');
       return;
     }
 
@@ -473,8 +470,7 @@ export default function CheckoutPage() {
                   ['cod', '💵 Cash on Delivery'],
                   ['razorpay', '💳 Pay Online (Razorpay)'],
                 ].map(([val, label]) => {
-                  const isCodDisabled = val === 'cod' && settings?.codEnabled === false;
-
+                  const isCodDisabled = val === 'cod' && form.orderType === 'delivery' && settings?.codEnabled === false;
                   return (
                     <button
                       key={val}
@@ -522,7 +518,7 @@ export default function CheckoutPage() {
                 })}
               </div>
 
-              {settings?.codEnabled === false && (
+              {form.orderType === 'delivery' && settings?.codEnabled === false && (
                 <p
                   style={{
                     fontSize: '12px',
@@ -532,7 +528,7 @@ export default function CheckoutPage() {
                   }}
                 >
                   {settings?.codDisabledReason ||
-                    'Cash on Delivery is temporarily unavailable. Please pay online.'}
+                    'Cash on Delivery is temporarily unavailable for delivery orders. Please pay online.'}
                 </p>
               )}
             </Section>
