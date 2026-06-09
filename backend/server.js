@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const { setIO } = require('./config/socket');
+const { verifyEmailConnection } = require('./utils/emailService');
 
 // Routes
 const userRoutes = require('./routes/userRoutes');
@@ -85,6 +86,9 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`\n🚀 RS MANI Café API running on port ${PORT}\n📡 Environment: ${process.env.NODE_ENV}\n`));
+server.listen(PORT, async () => {
+  console.log(`\n🚀 RS MANI Café API running on port ${PORT}\n📡 Environment: ${process.env.NODE_ENV}\n`);
 
+  await verifyEmailConnection();
+});
 module.exports = { app, server };
