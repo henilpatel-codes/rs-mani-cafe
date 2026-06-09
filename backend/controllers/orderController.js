@@ -7,6 +7,24 @@ const Coupon = require('../models/Coupon');
 const RestaurantSettings = require('../models/RestaurantSettings');
 const { getIO } = require('../config/socket');
 
+const sanitizeOrderForResponse = (order, user) => {
+  const safeOrder = order.toObject ? order.toObject() : { ...order };
+
+  const isOwner =
+    safeOrder.userId && safeOrder.userId.toString() === user?.id;
+
+  const canShowDeliveryOTP =
+    isOwner &&
+    safeOrder.orderType === 'delivery' &&
+    !['Delivered', 'Cancelled'].includes(safeOrder.status);
+
+  if (!canShowDeliveryOTP) {
+    delete safeOrder.deliveryOTP;
+  }
+
+  return safeOrder;
+};
+
 // @route POST /api/orders
 const placeOrder = async (req, res) => {
   try {
@@ -33,7 +51,6 @@ const placeOrder = async (req, res) => {
       });
     }
 
-    // Basic validation
     if (!customerName || !phone) {
       return res.status(400).json({
         message: 'Customer name and phone are required',
@@ -49,7 +66,6 @@ const placeOrder = async (req, res) => {
     const finalOrderType = orderType || 'takeaway';
     const finalPaymentMethod = (paymentMethod || 'cod').toLowerCase();
 
-    // COD availability check
     if (
       finalOrderType === 'delivery' &&
       finalPaymentMethod === 'cod' &&
@@ -62,7 +78,6 @@ const placeOrder = async (req, res) => {
       });
     }
 
-    // Minimum order amount check
     if (settings?.minOrderAmount > 0) {
       const roughTotal = items.reduce(
         (s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 0),
@@ -76,7 +91,6 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // Delivery pincode check
     if (finalOrderType === 'delivery' && settings?.servicedPincodes) {
       const allowed = settings.servicedPincodes
         .split(',')
@@ -92,7 +106,6 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // Build items with snapshots from DB
     let subtotal = 0;
     const enrichedItems = [];
 
@@ -121,7 +134,6 @@ const placeOrder = async (req, res) => {
       subtotal += menuItem.price * quantity;
     }
 
-    // Delivery charge
     const gstPct = settings?.gstPercentage ?? 5;
     let deliveryCharge = 0;
 
@@ -132,7 +144,6 @@ const placeOrder = async (req, res) => {
           : settings?.deliveryCharge ?? 30;
     }
 
-    // Coupon
     let discountAmount = 0;
     let appliedCoupon = null;
 
@@ -181,18 +192,11 @@ const placeOrder = async (req, res) => {
     const gstAmount = Math.round(((subtotal - discountAmount) * gstPct) / 100);
     const total = subtotal + gstAmount + deliveryCharge - discountAmount;
 
-    // Generate 4-digit delivery OTP for delivery orders
     const deliveryOTP =
       finalOrderType === 'delivery'
         ? String(Math.floor(1000 + Math.random() * 9000))
         : null;
 
-    /*
-      Payment security:
-      - COD => always pending
-      - Razorpay => backend verifies signature first
-      - Frontend paymentStatus is never trusted
-    */
     let finalPaymentStatus = 'pending';
     let finalPaymentId = null;
     let finalRazorpayOrderId = null;
@@ -280,10 +284,10 @@ const placeOrder = async (req, res) => {
       });
     }
 
-    res.status(201).json(order);
+    return res.status(201).json(sanitizeOrderForResponse(order, req.user));
   } catch (err) {
     console.error('placeOrder error:', err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -294,6 +298,7 @@ const getAllOrders = async (req, res) => {
     const query = status && status !== 'all' ? { status } : {};
 
     const orders = await Order.find(query)
+      .select('-deliveryOTP')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit))
@@ -301,14 +306,14 @@ const getAllOrders = async (req, res) => {
 
     const total = await Order.countDocuments(query);
 
-    res.json({
+    return res.json({
       orders,
       total,
       page: Number(page),
       pages: Math.ceil(total / limit),
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -341,9 +346,9 @@ const getOrderById = async (req, res) => {
       });
     }
 
-    res.json(order);
+    return res.json(sanitizeOrderForResponse(order, req.user));
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -391,9 +396,9 @@ const updateOrderStatus = async (req, res) => {
       });
     }
 
-    res.json(order);
+    return res.json(sanitizeOrderForResponse(order, req.user));
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -414,7 +419,6 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    // Check ownership
     if (
       req.user?.role !== 'admin' &&
       order.userId &&
@@ -440,9 +444,9 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    res.json(order);
+    return res.json(sanitizeOrderForResponse(order, req.user));
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -478,7 +482,6 @@ const addReview = async (req, res) => {
 
     await order.save();
 
-    // Update avg ratings for ordered items
     for (const item of order.items) {
       const allOrders = await Order.find({
         'items.itemId': item.itemId,
@@ -494,9 +497,9 @@ const addReview = async (req, res) => {
       });
     }
 
-    res.json(order);
+    return res.json(sanitizeOrderForResponse(order, req.user));
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -508,10 +511,7 @@ const getDashboardStats = async (req, res) => {
 
     const revenueMatch = {
       status: { $ne: 'Cancelled' },
-      $or: [
-        { paymentStatus: 'paid' },
-        { paymentMethod: 'cod' },
-      ],
+      $or: [{ paymentStatus: 'paid' }, { paymentMethod: 'cod' }],
     };
 
     const [
@@ -541,6 +541,7 @@ const getDashboardStats = async (req, res) => {
         { $group: { _id: null, total: { $sum: '$total' } } },
       ]),
       Order.find()
+        .select('-deliveryOTP')
         .sort({ createdAt: -1 })
         .limit(10)
         .populate('deliveryBoy', 'name'),
@@ -563,7 +564,7 @@ const getDashboardStats = async (req, res) => {
       { $limit: 5 },
     ]);
 
-    res.json({
+    return res.json({
       totalOrders,
       todayOrders,
       pendingOrders,
@@ -574,7 +575,7 @@ const getDashboardStats = async (req, res) => {
       recentOrders,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -591,7 +592,9 @@ const exportDailyCSV = async (req, res) => {
 
     const orders = await Order.find({
       createdAt: { $gte: start, $lte: end },
-    }).populate('deliveryBoy', 'name');
+    })
+      .select('-deliveryOTP')
+      .populate('deliveryBoy', 'name');
 
     const rows = [
       [
@@ -638,9 +641,9 @@ const exportDailyCSV = async (req, res) => {
       `attachment; filename="orders-${dateStr}.csv"`
     );
 
-    res.send(rows);
+    return res.send(rows);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 

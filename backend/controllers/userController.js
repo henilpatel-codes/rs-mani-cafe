@@ -312,7 +312,20 @@ const getUserOrders = async (req, res) => {
 
     const orders = await Order.find({ userId }).sort({ createdAt: -1 });
 
-    return res.json(orders);
+    const safeOrders = orders.map((order) => {
+      const safeOrder = order.toObject ? order.toObject() : { ...order };
+
+      if (
+        safeOrder.orderType !== 'delivery' ||
+        ['Delivered', 'Cancelled'].includes(safeOrder.status)
+      ) {
+        delete safeOrder.deliveryOTP;
+      }
+
+      return safeOrder;
+    });
+
+    return res.json(safeOrders);
   } catch (err) {
     console.error('[GET USER ORDERS ERROR]', err.message);
     return res.status(500).json({ message: err.message });
