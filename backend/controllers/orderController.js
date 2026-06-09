@@ -21,9 +21,9 @@ const placeOrder = async (req, res) => {
       return res.status(400).json({ message: 'Restaurant is currently closed. Please try again later.' });
     }
     // COD availability check
-    if (paymentMethod === 'cod' && settings?.codEnabled === false) {
+    if (orderType === 'delivery' && paymentMethod === 'cod' && settings?.codEnabled === false) {
       return res.status(400).json({
-        message: 'Cash on Delivery is currently not available. Please pay online.',
+        message: settings.codDisabledReason || 'Cash on Delivery is currently not available for delivery orders. Please pay online.',
       });
     }
     
