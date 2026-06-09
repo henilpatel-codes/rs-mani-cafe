@@ -288,7 +288,16 @@ const toggleFavorite = async (req, res) => {
 // @route GET /api/users/:userId/orders
 const getUserOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    const { userId } = req.params;
+
+    if (req.user?.role !== 'admin' && req.user?.id !== userId) {
+      return res.status(403).json({
+        message: 'Not allowed to view these orders',
+      });
+    }
+
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+
     return res.json(orders);
   } catch (err) {
     console.error('[GET USER ORDERS ERROR]', err.message);
