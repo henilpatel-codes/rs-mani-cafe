@@ -242,9 +242,9 @@ export default function CheckoutPage() {
                   razorpay_signature: response.razorpay_signature,
                 });
 
-                orderPayload.paymentStatus = 'paid';
                 orderPayload.paymentId = response.razorpay_payment_id;
                 orderPayload.razorpayOrderId = response.razorpay_order_id;
+                orderPayload.razorpaySignature = response.razorpay_signature;
 
                 const { data: order } = await api.post('/orders', orderPayload);
 
