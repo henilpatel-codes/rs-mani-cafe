@@ -1,5 +1,6 @@
 // server.js — RS MANI Café Backend v2.0
 const express = require('express');
+const uploadRoutes = require('./routes/uploadRoutes');
 const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
@@ -74,6 +75,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // ─── Health Check ────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date(), env: process.env.NODE_ENV }));

@@ -1,6 +1,6 @@
 // pages/admin/AdminMenu.jsx
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, ToggleLeft, ToggleRight, Search, Upload } from 'lucide-react';
 import AdminLayout from '../../components/AdminLayout';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ const EMPTY = { name: '', category: 'Dosas', price: '', description: '', image: 
 function ItemModal({ item, onClose, onSave }) {
   const [form, setForm] = useState(item || EMPTY);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,6 +27,44 @@ function ItemModal({ item, onClose, onSave }) {
       toast.error(err.response?.data?.message || 'Failed to save item');
     } finally { setLoading(false); }
   };
+
+    const handleImageUpload = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select a valid image file');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+
+      const data = new FormData();
+      data.append('image', file);
+
+      setUploading(true);
+
+      try {
+        const res = await api.post('/upload/menu-image', data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        setForm((prev) => ({
+          ...prev,
+          image: res.data.imageUrl,
+        }));
+
+        toast.success('Image uploaded!');
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Image upload failed');
+      } finally {
+        setUploading(false);
+        e.target.value = '';
+      }
+    };
 
   const iStyle = { width: '100%', padding: '9px 12px', border: '1px solid #e8d5c0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' };
   const lStyle = { display: 'block', fontSize: '13px', fontWeight: 600, color: '#4a3728', marginBottom: '5px' };
@@ -49,7 +88,68 @@ function ItemModal({ item, onClose, onSave }) {
             <div><label style={lStyle}>Price (₹) *</label><input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} min="0" placeholder="0" style={iStyle} required /></div>
           </div>
           <div><label style={lStyle}>Description</label><textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Brief description..." style={{ ...iStyle, resize: 'vertical' }} /></div>
-          <div><label style={lStyle}>Image URL</label><input value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} placeholder="https://..." style={iStyle} /></div>
+                    <div>
+                      <label style={lStyle}>Image</label>
+
+                      <input
+                        value={form.image}
+                        onChange={e => setForm({ ...form, image: e.target.value })}
+                        placeholder="Paste image URL or upload from gallery"
+                        style={iStyle}
+                      />
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '8px', alignItems: 'center' }}>
+                        <label
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '9px 12px',
+                            background: uploading ? '#e5e7eb' : '#fdf0e8',
+                            color: uploading ? '#6b7280' : '#c8501a',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            cursor: uploading ? 'not-allowed' : 'pointer',
+                            border: '1px solid #f1c7ad',
+                          }}
+                        >
+                          <Upload size={14} />
+                          {uploading ? 'Uploading...' : 'Upload from Gallery'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                            style={{ display: 'none' }}
+                          />
+                        </label>
+
+                        {form.image && (
+                          <span style={{ fontSize: '12px', color: '#16a34a' }}>
+                            Image selected
+                          </span>
+                        )}
+                      </div>
+
+                      {form.image && (
+                        <img
+                          src={form.image}
+                          alt="Preview"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                          style={{
+                            marginTop: '10px',
+                            width: '100%',
+                            maxHeight: '160px',
+                            objectFit: 'cover',
+                            borderRadius: '10px',
+                            border: '1px solid #e8d5c0',
+                          }}
+                        />
+                      )}
+                    </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={lStyle}>Type</label>
