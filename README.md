@@ -1,343 +1,595 @@
-# RS MANI Café — Production-Ready Restaurant Ordering System
+# RS MANI Café — Restaurant Ordering System
 
-A full-stack restaurant ordering system built with **React + Vite** (frontend) and **Node.js + Express + MongoDB Atlas** (backend). Supports customer ordering, admin management, and a delivery-boy panel with real-time Socket.IO updates.
-
----
-
-## Table of Contents
-
-1. [Software Required](#1-software-required)
-2. [Project Structure](#2-project-structure)
-3. [MongoDB Atlas Setup](#3-mongodb-atlas-setup)
-4. [Razorpay Setup](#4-razorpay-setup)
-5. [Backend Setup](#5-backend-setup)
-6. [Frontend Setup](#6-frontend-setup)
-7. [Environment Variables](#7-environment-variables)
-8. [Creating the First Admin User](#8-creating-the-first-admin-user)
-9. [How to Test — Customer Flow](#9-how-to-test--customer-flow)
-10. [How to Test — Admin Flow](#10-how-to-test--admin-flow)
-11. [How to Test — Delivery Flow](#11-how-to-test--delivery-flow)
-12. [Deployment](#12-deployment)
-13. [Features Summary](#13-features-summary)
+RS MANI Café is a full-stack restaurant ordering web application built using **React + Vite**, **Node.js + Express**, and **MongoDB Atlas**.
+It supports customer ordering, admin management, online payments, coupons, delivery assignment, delivery OTP verification, invoices, KOT printing, and image uploads for menu items.
 
 ---
 
-## 1. Software Required
+## Live Links
 
-| Software | Version | Purpose |
-|---|---|---|
-| Node.js | 18+ | Backend runtime |
-| npm | 9+ | Package manager |
-| Git | any | Version control |
-| MongoDB Atlas account | free tier OK | Database |
-| Razorpay account | test mode OK | Payments |
-| Gmail account | any | OTP/reset emails |
+* **Frontend:** https://rs-mani-cafe.vercel.app
+* **Backend:** https://rs-mani-cafe-backend.onrender.com
 
 ---
 
-## 2. Project Structure
+## Tech Stack
 
-```
+### Frontend
+
+* React
+* Vite
+* React Router
+* Axios
+* React Hot Toast
+* Lucide React
+* Razorpay Checkout
+* CSS responsive UI
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Mongoose
+* JWT Authentication
+* Bcrypt password hashing
+* Socket.IO
+* Razorpay
+* Cloudinary
+* Multer
+* Nodemailer / Email service
+
+### Deployment
+
+* Frontend: Vercel
+* Backend: Render
+* Database: MongoDB Atlas
+* Image Storage: Cloudinary
+
+---
+
+## Main Features
+
+### Customer Features
+
+* Customer registration and login
+* OTP-based account verification
+* Menu browsing with categories
+* Search menu items
+* Add to cart
+* Quantity update in cart
+* Checkout page
+* Order types:
+
+  * Delivery
+  * Takeaway
+  * Dine-in
+* COD and Razorpay online payment
+* Coupon apply system
+* Order history
+* Order tracking
+* Invoice page
+* Printable invoice
+* Customer favorites using heart button
+* Favorite items remain saved after refresh
+* Review/rating after delivery
+* Repeat past orders
+* Cancel order before preparation stage
+
+### Admin Features
+
+* Admin login
+* Admin dashboard
+* View total orders, today orders, pending orders, and revenue
+* Revenue includes paid online orders and COD orders
+* Cancelled orders excluded from revenue
+* Manage all orders
+* Update order status
+* Assign delivery boy to delivery orders
+* Print KOT
+* Export orders CSV
+* Manage menu items
+* Add/edit/delete menu items
+* Toggle item availability
+* Upload menu item images from gallery using Cloudinary
+* Paste image URL manually if needed
+* Manage coupons
+* Create flat or percentage discount coupons
+* Coupon usage limit
+* Coupon expiry date
+* Coupon minimum order amount
+* Manage delivery boys
+* Activate/deactivate delivery boy accounts
+* Restaurant settings:
+
+  * Open/closed status
+  * Minimum order amount
+  * GST percentage
+  * Delivery charge
+  * Free delivery threshold
+  * Serviceable pincodes
+  * Estimated delivery time
+  * WhatsApp settings
+  * COD enable/disable for delivery orders
+
+### Delivery Boy Features
+
+* Delivery boy login
+* Assigned orders dashboard
+* View active assigned orders
+* Update delivery status
+* Delivery OTP verification before marking delivered
+* Delivery history
+
+---
+
+## Security Improvements
+
+* JWT-based protected routes
+* Role-based access control:
+
+  * Customer
+  * Admin
+  * Delivery
+* Order creation protected for logged-in users
+* Backend uses logged-in user ID instead of trusting frontend user ID
+* Razorpay payment verification using backend signature verification
+* Frontend payment status is not trusted
+* User order ownership check added
+* Favorites ownership check added
+* Public order tracking secured
+* Delivery OTP hidden from admin lists and delivery lists
+* Delivery OTP only shown to the actual customer for active delivery orders
+* Admin seed route secured using `SEED_SECRET`
+* Coupon usage count increments only after successful order creation
+* COD setting validated from backend
+* Delivery COD depends on admin COD setting
+
+---
+
+## Project Structure
+
+```text
 rs_mani_cafe/
 ├── backend/
-│   ├── config/          # DB + Socket.IO setup
-│   ├── controllers/     # Business logic
-│   ├── middleware/      # JWT auth + role guards
-│   ├── models/          # Mongoose schemas
-│   ├── routes/          # Express routers
-│   ├── utils/           # Email service
-│   ├── server.js        # Entry point
-│   ├── .env.example     # Copy to .env
+│   ├── config/
+│   │   ├── db.js
+│   │   ├── socket.js
+│   │   └── cloudinary.js
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── utils/
+│   ├── server.js
+│   ├── .env.example
 │   └── package.json
+│
 └── frontend/
     ├── src/
-    │   ├── components/  # Navbar, AdminLayout
-    │   ├── context/     # AuthContext, CartContext
-    │   ├── pages/       # All pages
-    │   └── utils/       # Axios instance
-    ├── .env.example     # Copy to .env
+    │   ├── components/
+    │   ├── context/
+    │   ├── pages/
+    │   │   ├── admin/
+    │   │   ├── auth/
+    │   │   ├── customer/
+    │   │   └── delivery/
+    │   ├── utils/
+    │   ├── App.jsx
+    │   └── main.jsx
+    ├── .env.example
     └── package.json
 ```
 
 ---
 
-## 3. MongoDB Atlas Setup
+## Environment Variables
 
-1. Go to [https://cloud.mongodb.com](https://cloud.mongodb.com) → create a free account.
-2. Create a **new project** → click **Build a Database** → choose **Free (M0)**.
-3. Choose a cloud provider/region → click **Create**.
-4. Set a **database username** and **password** (save these).
-5. Under **Network Access** → **Add IP Address** → click **Allow Access from Anywhere** (`0.0.0.0/0`) for deployment, or add your specific IP for local dev.
-6. Go to **Database** → click **Connect** → **Drivers** → copy the connection string.
-7. Replace `<password>` with your DB password and `myFirstDatabase` with `rs_mani_cafe`.
+### Backend `.env`
 
-**Example URI:**
-```
-mongodb+srv://myuser:mypassword@cluster0.abc12.mongodb.net/rs_mani_cafe?retryWrites=true&w=majority
-```
-
-Paste this as `MONGO_URI` in `backend/.env`.
-
----
-
-## 4. Razorpay Setup
-
-1. Go to [https://dashboard.razorpay.com](https://dashboard.razorpay.com) → sign up.
-2. Stay in **Test Mode** for development.
-3. Go to **Settings → API Keys** → **Generate Key**.
-4. Copy **Key ID** → paste as `RAZORPAY_KEY_ID` in `backend/.env` AND `VITE_RAZORPAY_KEY_ID` in `frontend/.env`.
-5. Copy **Key Secret** → paste as `RAZORPAY_KEY_SECRET` in `backend/.env` only (never expose in frontend).
-
-> **Note:** COD always works without Razorpay keys. Razorpay is only required for online payments.
-
----
-
-## 5. Backend Setup
-
-```bash
-cd backend
-
-# 1. Copy env file
-cp .env.example .env
-
-# 2. Fill in your values (see Section 7)
-nano .env        # or open in any editor
-
-# 3. Install dependencies
-npm install
-
-# 4. Start development server
-npm run dev
-
-# 5. Verify it's running
-# Open: http://localhost:5000/health
-```
-
-Expected output:
-```
-🚀 RS MANI Café API running on port 5000
-📡 Environment: development
-✅ MongoDB Connected: cluster0.xxx.mongodb.net
-```
-
----
-
-## 6. Frontend Setup
-
-```bash
-cd frontend
-
-# 1. Copy env file
-cp .env.example .env
-
-# 2. Fill in your values (see Section 7)
-nano .env
-
-# 3. Install dependencies
-npm install
-
-# 4. Start development server
-npm run dev
-
-# 5. Open in browser
-# http://localhost:5173
-```
-
-> The Vite dev server automatically proxies `/api` and `/socket.io` to `http://localhost:5000`, so you don't need CORS issues locally.
-
----
-
-## 7. Environment Variables
-
-### `backend/.env`
+Create `backend/.env`:
 
 ```env
 PORT=5000
 NODE_ENV=development
 
-# MongoDB Atlas connection string
-MONGO_URI=mongodb+srv://user:pass@cluster0.xxx.mongodb.net/rs_mani_cafe?retryWrites=true&w=majority
+MONGO_URI=your_mongodb_atlas_connection_string
 
-# JWT — use a long random string (min 32 chars)
-JWT_SECRET=change_this_to_a_random_32char_secret_key
+JWT_SECRET=your_long_random_jwt_secret
 
-# Razorpay (leave blank to use COD only)
-RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXX
-RAZORPAY_KEY_SECRET=XXXXXXXXXXXXXXXXXXXXXXXX
-
-# Gmail App Password for OTP emails
-# Enable at: Google Account → Security → 2-Step → App Passwords
-EMAIL_USER=your@gmail.com
-EMAIL_PASS=xxxx xxxx xxxx xxxx
-
-# Frontend URL for CORS (no trailing slash)
 FRONTEND_URL=http://localhost:5173
+
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+
+CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+
+SEED_SECRET=your_temporary_seed_secret
+
+EMAIL_SKIP=true
+SKIP_EMAIL=true
 ```
 
-### `frontend/.env`
+For production on Render:
 
 ```env
-# Backend URL (no trailing slash)
-VITE_API_URL=http://localhost:5000
+NODE_ENV=production
+FRONTEND_URL=https://rs-mani-cafe.vercel.app
+```
 
-# Razorpay public key (safe to expose)
-VITE_RAZORPAY_KEY_ID=rzp_test_XXXXXXXXXXXXXXXX
+Important:
+
+* Do not commit `.env`.
+* Keep `JWT_SECRET`, `RAZORPAY_KEY_SECRET`, `CLOUDINARY_API_SECRET`, and `SEED_SECRET` private.
+* `SEED_SECRET` should be added only when creating first admin, then removed from Render env after admin is created.
+
+---
+
+### Frontend `.env`
+
+Create `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:5000
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
+
+For production on Vercel:
+
+```env
+VITE_API_URL=https://rs-mani-cafe-backend.onrender.com
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
 ```
 
 ---
 
-## 8. Creating the First Admin User
+## Local Setup
 
-After both servers are running, call the seed endpoint **once**:
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/henilpatel-codes/rs-mani-cafe.git
+cd rs-mani-cafe
+```
+
+---
+
+### 2. Backend Setup
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+Backend will run on:
+
+```text
+http://localhost:5000
+```
+
+Health check:
+
+```text
+http://localhost:5000/health
+```
+
+---
+
+### 3. Frontend Setup
+
+Open another terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend will run on:
+
+```text
+http://localhost:5173
+```
+
+---
+
+## Creating First Admin
+
+The admin seed route is protected using `SEED_SECRET`.
+
+Add this in backend `.env` temporarily:
+
+```env
+SEED_SECRET=your_temporary_seed_secret
+```
+
+Then send POST request:
 
 ```bash
 curl -X POST http://localhost:5000/api/admin/seed-admin \
   -H "Content-Type: application/json" \
-  -d '{"name":"Admin","email":"admin@rsmani.com","password":"admin123"}'
+  -d '{"name":"Admin","email":"admin@rsmani.com","password":"admin123","seedSecret":"your_temporary_seed_secret"}'
 ```
 
-Or use a REST client (Postman / Thunder Client):
-- **POST** `http://localhost:5000/api/admin/seed-admin`
-- Body (JSON): `{ "name": "Admin", "email": "admin@rsmani.com", "password": "admin123" }`
+After admin is created:
 
-Then log in at `http://localhost:5173/login` with those credentials.
+* Remove `SEED_SECRET` from production env.
+* Restart/redeploy backend.
 
-> This endpoint returns an error if an admin already exists, so it is safe to leave enabled.
-
----
-
-## 9. How to Test — Customer Flow
-
-1. Open `http://localhost:5173`
-2. Click **Sign Up** → fill details → receive OTP on email → verify.
-   - If email is not configured, check backend console for the OTP log line.
-3. Browse **Menu** → add items to cart.
-4. Go to **Cart** → review → click **Checkout**.
-5. Choose order type: **Takeaway / Dine-In / Delivery**.
-   - For delivery, enter address + pincode (must be in serviceable list if configured).
-6. Apply a coupon code if any exist (create one in admin first).
-7. Choose **COD** or **Pay Online (Razorpay)**.
-   - For Razorpay test: use card `4111 1111 1111 1111`, any future date, CVV `123`.
-8. After placing order, you land on the **Payment Success** page.
-9. Click **Track Order** — watch status update live as admin changes it.
-10. For delivery orders, your **4-digit OTP** is shown on the tracking page.
+This disables admin seed route for safety.
 
 ---
 
-## 10. How to Test — Admin Flow
+## Customer Flow Testing
 
-1. Log in with admin credentials at `http://localhost:5173/login`.
-2. You are redirected to `/admin` (Dashboard).
+1. Open frontend.
+2. Register customer account.
+3. Verify OTP.
+4. Login as customer.
+5. Open menu page.
+6. Search/filter menu items.
+7. Click heart icon to add/remove favorites.
+8. Add items to cart.
+9. Go to cart.
+10. Proceed to checkout.
+11. Select order type:
 
-**Dashboard:**
-- See live stats: total orders, today's orders, pending, revenue.
-- New orders trigger a **beep sound** and toast notification (Socket.IO).
-- Use the **CSV export** to download orders for any date.
-- Toggle restaurant **Open / Closed** from the status banner.
+    * Delivery
+    * Takeaway
+    * Dine-in
+12. Apply coupon if available.
+13. Choose payment method:
 
-**Orders (`/admin/orders`):**
-- Filter by status, search by name/invoice/phone.
-- Click **Manage** on any order to:
-  - Change status (Pending → Accepted → Preparing → Packed → Out for Delivery → Delivered / Cancelled)
-  - Assign a delivery boy (for delivery orders)
-  - Set estimated time
-  - Print **KOT** (Kitchen Order Ticket) — opens a print dialog
-  - Send **WhatsApp** message to customer
-
-**Menu (`/admin/menu`):**
-- Add / edit / delete items.
-- Toggle **Available / Unavailable** per item.
-
-**Coupons (`/admin/coupons`):**
-- Create percentage or flat-amount coupons.
-- Set usage limits, expiry dates, minimum order amounts.
-
-**Delivery Boys (`/admin/delivery-boys`):**
-- Create delivery staff accounts (email + password).
-- Activate / deactivate accounts.
-
-**Settings (`/admin/settings`):**
-- Toggle restaurant open/closed.
-- Set GST %, delivery charge, free-delivery threshold, estimated time.
-- Set **minimum order amount**.
-- Set **serviceable pincodes** (comma-separated).
+    * COD
+    * Razorpay online payment
+14. Place order.
+15. View order history.
+16. Open invoice.
+17. Track order status.
 
 ---
 
-## 11. How to Test — Delivery Flow
+## Admin Flow Testing
 
-1. Create a delivery boy account from `/admin/delivery-boys`.
-2. Log in at `http://localhost:5173/delivery/login` with their credentials.
-3. The dashboard shows **active assigned orders**.
-4. Advance each order through statuses using the button on each card.
-5. When marking **Delivered**:
-   - If the order has a delivery OTP, a modal appears.
-   - Enter the 4-digit OTP shown to the customer on their tracking page.
-   - On correct OTP → order marked Delivered.
+1. Login as admin.
+2. Open admin dashboard.
+3. Check stats and revenue.
+4. Go to menu management.
+5. Add menu item.
+6. Upload image from gallery or paste image URL.
+7. Toggle item availability.
+8. Go to orders.
+9. Update order status.
+10. Assign delivery boy for delivery order.
+11. Print KOT.
+12. Export CSV if needed.
+13. Create coupon.
+14. Update restaurant settings.
+15. Enable/disable delivery COD from settings.
 
 ---
 
-## 12. Deployment
+## Delivery Flow Testing
 
-### Backend → Render (free tier)
+1. Admin creates delivery boy account.
+2. Delivery boy logs in from delivery login page.
+3. Assigned orders appear in dashboard.
+4. Delivery boy updates order status.
+5. Before marking delivered, delivery OTP is required.
+6. Customer shares OTP shown on their order tracking page.
+7. Correct OTP marks order as delivered.
 
-1. Push `backend/` folder to a GitHub repo.
-2. Go to [https://render.com](https://render.com) → **New Web Service**.
-3. Connect your repo. Settings:
-   - **Build Command:** `npm install`
-   - **Start Command:** `node server.js`
-   - **Node version:** 18
-4. Add all environment variables from `backend/.env` under **Environment**.
-5. Set `NODE_ENV=production` and `FRONTEND_URL=https://your-app.vercel.app`.
-6. Deploy. Copy your Render URL (e.g. `https://rs-mani-cafe-api.onrender.com`).
+---
 
-### Frontend → Vercel
+## Payment Notes
 
-1. Push `frontend/` folder to a GitHub repo.
-2. Go to [https://vercel.com](https://vercel.com) → **New Project** → import repo.
+### COD
+
+COD works for:
+
+* Takeaway
+* Dine-in
+* Delivery only if admin has enabled COD for delivery
+
+### Razorpay
+
+Online payment uses Razorpay Checkout.
+
+Backend verifies:
+
+* `razorpay_payment_id`
+* `razorpay_order_id`
+* `razorpay_signature`
+
+Payment is marked paid only after successful backend verification.
+
+---
+
+## Cloudinary Image Upload
+
+Admin can upload menu images from gallery.
+
+Flow:
+
+1. Admin selects image from menu form.
+2. Image goes to backend upload API.
+3. Backend uploads to Cloudinary.
+4. Cloudinary secure URL is returned.
+5. URL is saved in menu item image field.
+6. Customer menu displays uploaded image.
+
+Cloudinary env variables required in backend:
+
+```env
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+---
+
+## Deployment
+
+### Backend Deployment on Render
+
+1. Push code to GitHub.
+2. Create new Web Service on Render.
+3. Connect GitHub repository.
+4. Set root directory if needed:
+
+   ```text
+   backend
+   ```
+5. Build command:
+
+   ```bash
+   npm install
+   ```
+6. Start command:
+
+   ```bash
+   node server.js
+   ```
+7. Add backend environment variables.
+8. Deploy.
+
+Important Render env:
+
+```env
+NODE_ENV=production
+FRONTEND_URL=https://rs-mani-cafe.vercel.app
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret
+RAZORPAY_KEY_ID=your_key
+RAZORPAY_KEY_SECRET=your_secret
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_key
+CLOUDINARY_API_SECRET=your_secret
+```
+
+---
+
+### Frontend Deployment on Vercel
+
+1. Import GitHub repository in Vercel.
+2. Set root directory if needed:
+
+   ```text
+   frontend
+   ```
 3. Add environment variables:
-   - `VITE_API_URL` = your Render backend URL (no trailing slash)
-   - `VITE_RAZORPAY_KEY_ID` = your Razorpay key ID
-4. Deploy. Vercel auto-detects Vite.
 
-### Post-deployment checklist
+```env
+VITE_API_URL=https://rs-mani-cafe-backend.onrender.com
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+```
 
-- [ ] Update `FRONTEND_URL` in Render env vars to match Vercel URL.
-- [ ] Run seed-admin against the production URL.
-- [ ] Test a full order flow end-to-end.
-- [ ] Add your production domain to MongoDB Atlas Network Access if needed.
-- [ ] Switch Razorpay from Test mode to Live mode when ready.
+4. Deploy.
 
 ---
 
-## 13. Features Summary
+## Production Checklist
 
-| Feature | Details |
-|---|---|
-| Authentication | JWT, OTP email verification, forgot/reset password |
-| Roles | customer, admin, delivery |
-| Menu | Categories, availability toggle, ratings |
-| Cart | Persistent in session, qty controls |
-| Orders | Dine-in / Takeaway / Delivery |
-| Delivery address | Street, city, pincode, landmark |
-| Coupons | Percentage & flat, usage limits, expiry |
-| GST | Configurable % applied at checkout |
-| Delivery charges | Auto waived above threshold |
-| Min order amount | Configurable, validated frontend + backend |
-| Pincode check | Serviceable zones, validated frontend + backend |
-| Payments | Razorpay (online) + COD |
-| Delivery OTP | 4-digit OTP customer shares with delivery boy |
-| Real-time updates | Socket.IO order status, admin new-order alerts |
-| Alert sound | Web Audio API beep on new order in admin |
-| KOT print | Kitchen Order Ticket print popup from admin |
-| CSV export | Daily sales export from admin dashboard |
-| Invoice | Printable/WhatsApp-shareable invoice per order |
-| Reviews | Star rating + text after delivery |
-| Repeat order | Re-add past order items to cart |
-| Cancel order | Customer cancel before Preparing stage |
-| Delivery panel | Assigned orders, status advance, OTP confirm |
-| Admin dashboard | Stats, revenue, popular items, recent orders |
-| WhatsApp button | Pre-filled message to customer from admin |
-| Responsive UI | Works on mobile and desktop |
-t e s t  
- 
+* [ ] MongoDB Atlas connected
+* [ ] Backend deployed on Render
+* [ ] Frontend deployed on Vercel
+* [ ] `FRONTEND_URL` set correctly in Render
+* [ ] `VITE_API_URL` set correctly in Vercel
+* [ ] Razorpay test payment working
+* [ ] COD order working
+* [ ] Admin login working
+* [ ] Menu CRUD working
+* [ ] Cloudinary image upload working
+* [ ] Customer favorites working
+* [ ] Order tracking working
+* [ ] Delivery OTP working
+* [ ] Invoice print working
+* [ ] KOT print working
+* [ ] Coupon apply working
+* [ ] Admin seed secret removed after admin creation
+
+---
+
+## Important API Routes
+
+### Auth
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/verify-otp
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+```
+
+### Menu
+
+```text
+GET    /api/menu
+POST   /api/menu
+PUT    /api/menu/:id
+DELETE /api/menu/:id
+```
+
+### Orders
+
+```text
+POST /api/orders
+GET  /api/orders/:id
+PUT  /api/orders/:id/status
+```
+
+### User
+
+```text
+GET /api/users/me
+GET /api/users/:userId/orders
+PUT /api/users/:userId/favorites/:itemId
+```
+
+### Upload
+
+```text
+POST /api/upload/menu-image
+```
+
+### Admin
+
+```text
+POST /api/admin/seed-admin
+GET  /api/admin/dashboard
+```
+
+---
+
+## Future Improvements
+
+* Customer profile page
+* Saved delivery addresses
+* Checkout auto-fill using saved address
+* WhatsApp order notifications
+* Better admin sales charts
+* Customer reorder button improvements
+* Push notifications
+* More advanced inventory management
+* Table QR ordering
+* Kitchen display screen
+* Multi-branch support
+* Better analytics reports
+
+---
+
+## Author
+
+**Henil Patel**
+
+GitHub: https://github.com/henilpatel-codes
+
+---
+
+## License
+
+This project is for learning, portfolio, and restaurant ordering system demonstration purposes.
