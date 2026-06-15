@@ -13,6 +13,35 @@ const userSchema = new mongoose.Schema(
     isAdmin: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: false },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+
+    addresses: [
+      {
+        label: {
+          type: String,
+          default: 'Home',
+        },
+        fullAddress: {
+          type: String,
+          required: true,
+        },
+        city: {
+          type: String,
+          default: '',
+        },
+        state: {
+          type: String,
+          default: '',
+        },
+        pincode: {
+          type: String,
+          default: '',
+        },
+        isDefault: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
     // OTP Email Verification
     otp: { type: String, default: null },
     otpExpiry: { type: Date, default: null },
@@ -38,5 +67,7 @@ userSchema.pre('save', async function (next) {
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
+
 
 module.exports = mongoose.model('User', userSchema);
