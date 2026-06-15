@@ -332,6 +332,93 @@ const getUserOrders = async (req, res) => {
   }
 };
 
+// @route GET /api/users/profile
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      '-password -otp -otpExpiry -resetPasswordToken -resetPasswordExpiry'
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json(user);
+  } catch (err) {
+    console.error('[GET PROFILE ERROR]', err.message);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+// @route POST /api/users/addresses
+const addAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const addressData = req.body;
+
+    if (!addressData.fullAddress) {
+      return res.status(400).json({
+        message: 'Address is required',
+      });
+    }
+
+    if (user.addresses.length === 0) {
+      addressData.isDefault = true;
+    }
+
+    user.addresses.push(addressData);
+
+    await user.save();
+
+    return res.json(user.addresses);
+  } catch (err) {
+    console.error('[ADD ADDRESS ERROR]', err.message);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+// @route DELETE /api/users/addresses/:addressId
+const deleteAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    user.addresses = user.addresses.filter(
+      (a) => a._id.toString() !== req.params.addressId
+    );
+
+    await user.save();
+
+    return res.json(user.addresses);
+  } catch (err) {
+    console.error('[DELETE ADDRESS ERROR]', err.message);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+// @route PUT /api/users/addresses/:addressId/default
+const setDefaultAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    user.addresses.forEach((address) => {
+      address.isDefault =
+        address._id.toString() === req.params.addressId;
+    });
+
+    await user.save();
+
+    return res.json(user.addresses);
+  } catch (err) {
+    console.error('[SET DEFAULT ADDRESS ERROR]', err.message);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
 // @route GET /api/users/delivery-boys (admin)
 const getDeliveryBoys = async (req, res) => {
   try {
@@ -358,4 +445,8 @@ module.exports = {
   toggleFavorite,
   getUserOrders,
   getDeliveryBoys,
+  getProfile,
+  addAddress,
+  deleteAddress,
+  setDefaultAddress,
 };
