@@ -56,9 +56,15 @@ export default function Navbar() {
             <ChefHat size={17} /> Menu
           </NavLink>
           {user && !isAdmin && !isDelivery && (
-            <NavLink to="/orders" className={navLinkClass}>
-              <ClipboardList size={17} /> My Orders
-            </NavLink>
+            <>
+              <NavLink to="/orders" className={navLinkClass}>
+                <ClipboardList size={17} /> My Orders
+              </NavLink>
+
+              <NavLink to="/profile" className={navLinkClass}>
+                <User size={17} /> Profile
+              </NavLink>
+            </>
           )}
           {isAdmin && (
             <NavLink to="/admin" className={({ isActive }) => `rs-nav-link rs-nav-link-highlight ${isActive ? 'active' : ''}`}>
@@ -126,9 +132,23 @@ export default function Navbar() {
               </NavLink>
             )}
             {user && !isAdmin && !isDelivery && (
-              <NavLink to="/orders" className={mobileLinkClass} onClick={closeMenu}>
-                <Package size={18} /> My Orders
-              </NavLink>
+              <>
+                <NavLink
+                  to="/orders"
+                  className={mobileLinkClass}
+                  onClick={closeMenu}
+                >
+                  <Package size={18} /> My Orders
+                </NavLink>
+
+                <NavLink
+                  to="/profile"
+                  className={mobileLinkClass}
+                  onClick={closeMenu}
+                >
+                  <User size={18} /> Profile
+                </NavLink>
+              </>
             )}
             {isAdmin && (
               <NavLink to="/admin" className={mobileLinkClass} onClick={closeMenu}>

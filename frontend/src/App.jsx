@@ -34,6 +34,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 // Delivery pages
 import DeliveryLogin from './pages/delivery/DeliveryLogin';
 import DeliveryDashboard from './pages/delivery/DeliveryDashboard';
+import ProfilePage from './pages/customer/ProfilePage';
 
 const ProtectedAdmin = ({ children }) => {
   const { user } = useAuth();
@@ -67,12 +68,68 @@ function AppRoutes() {
       <Route path="/order/:id/track" element={<OrderTrackingPage />} />
 
       {/* Customer */}
-      <Route path="/cart" element={<ProtectedCustomer><CartPage /></ProtectedCustomer>} />
-<Route path="/checkout" element={<ProtectedCustomer><CheckoutPage /></ProtectedCustomer>} />
-<Route path="/payment/success" element={<ProtectedCustomer><PaymentSuccessPage /></ProtectedCustomer>} />
-<Route path="/payment/failed" element={<ProtectedCustomer><PaymentFailedPage /></ProtectedCustomer>} />
-<Route path="/invoice/:id" element={<ProtectedCustomer><InvoicePage /></ProtectedCustomer>} />
-<Route path="/orders" element={<ProtectedCustomer><OrderHistoryPage /></ProtectedCustomer>} />
+      <Route
+        path="/cart"
+        element={
+          <ProtectedCustomer>
+            <CartPage />
+          </ProtectedCustomer>
+        }
+      />
+
+      <Route
+        path="/checkout"
+        element={
+          <ProtectedCustomer>
+            <CheckoutPage />
+          </ProtectedCustomer>
+        }
+      />
+
+      <Route
+        path="/payment/success"
+        element={
+          <ProtectedCustomer>
+            <PaymentSuccessPage />
+          </ProtectedCustomer>
+        }
+      />
+
+      <Route
+        path="/payment/failed"
+        element={
+          <ProtectedCustomer>
+            <PaymentFailedPage />
+          </ProtectedCustomer>
+        }
+      />
+
+      <Route
+        path="/invoice/:id"
+        element={
+          <ProtectedCustomer>
+            <InvoicePage />
+          </ProtectedCustomer>
+        }
+      />
+
+      <Route
+        path="/orders"
+        element={
+          <ProtectedCustomer>
+            <OrderHistoryPage />
+          </ProtectedCustomer>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedCustomer>
+            <ProfilePage />
+          </ProtectedCustomer>
+        }
+      />
 
       {/* Admin */}
       <Route path="/admin" element={<ProtectedAdmin><AdminDashboard /></ProtectedAdmin>} />
