@@ -1,7 +1,10 @@
 import React from 'react';
 import Navbar from '../../components/Navbar';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ProfilePage() {
+  const { user } = useAuth();
+
   return (
     <div
       style={{
@@ -36,10 +39,34 @@ export default function ProfilePage() {
             background: '#fff',
             border: '1px solid #e8d5c0',
             borderRadius: '16px',
-            padding: '20px',
+            padding: '24px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
           }}
         >
-          Profile Page Working 🚀
+          <h2
+            style={{
+              marginBottom: '20px',
+              color: '#1a0f05',
+            }}
+          >
+            Account Details
+          </h2>
+
+          <p>
+            <strong>Name:</strong> {user?.name || 'Not Available'}
+          </p>
+
+          <p>
+            <strong>Email:</strong> {user?.email || 'Not Available'}
+          </p>
+
+          <p>
+            <strong>Phone:</strong> {user?.phone || 'Not Added'}
+          </p>
+
+          <p>
+            <strong>Role:</strong> {user?.role || 'Customer'}
+          </p>
         </div>
       </div>
     </div>
