@@ -7,16 +7,27 @@ import api from '../utils/api';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
+  });
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (form.password !== form.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
     setLoading(true);
     try {
-      await api.post('/users/register', form);
+      const { confirmPassword, ...registerData } = form;
+      await api.post('/users/register', registerData);
       toast.success('OTP sent to your email!');
       navigate('/verify-otp', { state: { email: form.email } });
     } catch (err) { toast.error(err.response?.data?.message || 'Registration failed'); }
@@ -42,6 +53,30 @@ export default function RegisterPage() {
                 <button className="auth-eye" type="button" onClick={() => setShowPass(!showPass)}>{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
               </div>
             </div>
+
+            <div className="auth-field">
+              <label>Confirm Password</label>
+              <div className="auth-input-wrap">
+                <input
+                  className="auth-input auth-input-peek"
+                  type={showPass ? 'text' : 'password'}
+                  required
+                  value={form.confirmPassword}
+                  onChange={e =>
+                    setForm({ ...form, confirmPassword: e.target.value })
+                  }
+                  placeholder="Re-enter your password"
+                />
+                <button
+                  className="auth-eye"
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                >
+                  {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+            
             <button className="auth-submit" type="submit" disabled={loading}>{loading ? 'Creating Account...' : 'Create Account'}</button>
           </form>
           <p className="auth-link-row">Already have an account? <Link to="/login">Sign in</Link></p>
