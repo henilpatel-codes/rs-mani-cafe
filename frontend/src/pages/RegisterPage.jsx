@@ -73,7 +73,7 @@ export default function RegisterPage() {
                   onClick={() => setShowPass(!showPass)}
                 >
                   {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                </button> 
               </div>
             </div>
             
