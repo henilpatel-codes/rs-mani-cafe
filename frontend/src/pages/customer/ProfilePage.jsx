@@ -1,9 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await api.get('/users/profile');
+
+        setProfile(data);
+      } catch (err) {
+        console.error('Profile fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <div
@@ -52,21 +70,60 @@ export default function ProfilePage() {
             Account Details
           </h2>
 
+          {loading && <p>Loading profile...</p>}
+
           <p>
-            <strong>Name:</strong> {user?.name || 'Not Available'}
+            <strong>Name:</strong> {profile?.name || 'Loading...'}
           </p>
 
           <p>
-            <strong>Email:</strong> {user?.email || 'Not Available'}
+            <strong>Email:</strong> {profile?.email || 'Loading...'}
           </p>
 
           <p>
-            <strong>Phone:</strong> {user?.phone || 'Not Added'}
+            <strong>Phone:</strong> {profile?.phone || 'Not Added'}
           </p>
 
-          <p>
-            <strong>Role:</strong> {user?.role || 'Customer'}
-          </p>
+          <hr style={{ margin: '20px 0' }} />
+
+          <h3>Saved Addresses</h3>
+
+          {profile?.addresses?.length === 0 ? (
+            <p>No saved addresses yet.</p>
+          ) : (
+            profile?.addresses?.map((address) => (
+              <div
+                key={address._id}
+                style={{
+                  border: '1px solid #e8d5c0',
+                  borderRadius: '12px',
+                  padding: '12px',
+                  marginBottom: '12px',
+                }}
+              >
+                <strong>{address.label}</strong>
+
+                {address.isDefault && (
+                  <span
+                    style={{
+                      marginLeft: '10px',
+                      color: 'green',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    Default
+                  </span>
+                )}
+
+                <p>{address.fullAddress}</p>
+
+                <p>
+                  {address.city} {address.state} {address.pincode}
+                </p>
+              </div>
+            ))
+          )}
+
         </div>
       </div>
     </div>
