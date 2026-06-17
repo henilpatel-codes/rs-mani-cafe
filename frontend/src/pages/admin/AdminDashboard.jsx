@@ -62,14 +62,6 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-    const socket = io(import.meta.env.VITE_API_URL || '', { transports: ['websocket'] });
-    socket.emit('join_admin');
-    socket.on('new_order', (data) => {
-      playAlertSound();
-      toast.success(`🔔 New order from ${data.customerName} — ₹${data.total}`, { duration: 6000 });
-      fetchData();
-    });
-    return () => socket.disconnect();
   }, []);
 
   const handleExportCSV = async () => {
