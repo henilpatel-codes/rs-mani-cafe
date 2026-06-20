@@ -18,6 +18,8 @@ const orderSchema = new mongoose.Schema(
       city: { type: String, default: '' },
       pincode: { type: String, default: '' },
       landmark: { type: String, default: '' },
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
     },
     // Items
     items: [

@@ -1,4 +1,4 @@
-﻿const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 
 const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || 'gmail').toLowerCase();
 
@@ -149,6 +149,14 @@ const sendMail = async ({ email, name, subject, html, text }) => {
 
 const sendOTPEmail = async (email, name, otp) => {
   try {
+    if (isEmailDisabled()) {
+      console.log(`\n-----------------------------------------`);
+      console.log(`[DEVELOPMENT MODE - EMAIL DISABLED]`);
+      console.log(`OTP generated for ${email}: ${otp}`);
+      console.log(`-----------------------------------------\n`);
+      return { success: true, sent: false };
+    }
+
     await sendMail({
       email,
       name,
@@ -166,6 +174,14 @@ const sendOTPEmail = async (email, name, otp) => {
 
 const sendPasswordResetEmail = async (email, name, resetLink) => {
   try {
+    if (isEmailDisabled()) {
+      console.log(`\n-----------------------------------------`);
+      console.log(`[DEVELOPMENT MODE - EMAIL DISABLED]`);
+      console.log(`Password reset link for ${email}: ${resetLink}`);
+      console.log(`-----------------------------------------\n`);
+      return { success: true, sent: false };
+    }
+
     await sendMail({
       email,
       name,

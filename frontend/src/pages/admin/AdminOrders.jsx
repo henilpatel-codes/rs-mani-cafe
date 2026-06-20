@@ -97,8 +97,35 @@ function OrderModal({ order, deliveryBoys, onClose, onUpdate }) {
           <div style={{ borderTop: '1px solid #e8d5c0', marginTop: '8px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '15px' }}>
             <span>Total</span><span style={{ color: '#c8501a' }}>₹{order.total}</span>
           </div>
-          {order.orderType === 'delivery' && order.deliveryAddress?.street && (
-            <div style={{ marginTop: '8px', fontSize: '12px', color: '#7c5c3e' }}>📍 {order.deliveryAddress.street}, {order.deliveryAddress.city} {order.deliveryAddress.pincode}</div>
+          {order.orderType === 'delivery' && (
+            <div style={{ marginTop: '8px', fontSize: '12px', color: '#7c5c3e' }}>
+              📍 {order.deliveryAddress?.street ? (
+                `${order.deliveryAddress.street}, ${order.deliveryAddress.city || ''} ${order.deliveryAddress.pincode || ''}`
+              ) : (order.deliveryAddress?.latitude && order.deliveryAddress?.longitude) ? (
+                <span style={{ fontWeight: 600 }}>Shared Live Location</span>
+              ) : (
+                'No Address Provided'
+              )}
+              {order.deliveryAddress?.latitude && order.deliveryAddress?.longitude && (
+                <div style={{ marginTop: '6px' }}>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${order.deliveryAddress.latitude},${order.deliveryAddress.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      color: '#c8501a',
+                      textDecoration: 'underline',
+                      fontWeight: 600,
+                    }}
+                  >
+                    🧭 View Location on Google Maps
+                  </a>
+                </div>
+              )}
+            </div>
           )}
           {order.specialInstructions && <div style={{ marginTop: '6px', fontSize: '12px', color: '#7c5c3e' }}>📝 {order.specialInstructions}</div>}
         </div>
