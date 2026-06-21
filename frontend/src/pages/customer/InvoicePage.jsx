@@ -83,9 +83,15 @@ export default function InvoicePage() {
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#b8997a', marginBottom: '6px', fontWeight: 600 }}>Bill To</div>
               <div style={{ fontWeight: 700, color: '#1a0f05', fontSize: '15px' }}>{order.customerName}</div>
               <div style={{ color: '#7c5c3e', fontSize: '13px' }}>{order.phone}</div>
-              {order.orderType === 'delivery' && order.deliveryAddress?.street && (
+              {order.orderType === 'delivery' && (
                 <div style={{ color: '#7c5c3e', fontSize: '12px', marginTop: '4px' }}>
-                  {order.deliveryAddress.street}{order.deliveryAddress.city ? `, ${order.deliveryAddress.city}` : ''}{order.deliveryAddress.pincode ? ` - ${order.deliveryAddress.pincode}` : ''}
+                  {order.deliveryAddress?.street ? (
+                    `${order.deliveryAddress.street}${order.deliveryAddress.city ? `, ${order.deliveryAddress.city}` : ''}${order.deliveryAddress.pincode ? ` - ${order.deliveryAddress.pincode}` : ''}`
+                  ) : (order.deliveryAddress?.latitude && order.deliveryAddress?.longitude) ? (
+                    <span style={{ fontWeight: 600 }}>Shared Live Location</span>
+                  ) : (
+                    'No Address Provided'
+                  )}
                 </div>
               )}
             </div>

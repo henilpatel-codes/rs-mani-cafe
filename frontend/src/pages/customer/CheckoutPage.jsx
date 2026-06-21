@@ -72,6 +72,8 @@ export default function CheckoutPage() {
     landmark: '',
     specialInstructions: '',
     paymentMethod: '',
+    latitude: null,
+    longitude: null,
   });
 
   const [coupon, setCoupon] = useState({
@@ -82,6 +84,31 @@ export default function CheckoutPage() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+
+  const getLiveLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setForm(f => ({
+          ...f,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        }));
+        setLocationLoading(false);
+        toast.success('Live location updated successfully!');
+      },
+      (error) => {
+        setLocationLoading(false);
+        toast.error('Failed to get location. Please allow location permissions.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   useEffect(() => {
     if (items.length === 0) navigate('/cart');
@@ -145,9 +172,9 @@ export default function CheckoutPage() {
       toast.error('Name and phone are required');
       return;
     }
-
-    if (form.orderType === 'delivery' && !form.street.trim()) {
-      toast.error('Delivery address is required');
+    const hasLiveLocation = form.latitude && form.longitude;
+    if (form.orderType === 'delivery' && !hasLiveLocation && !form.street.trim()) {
+      toast.error('Street address or Current location is required');
       return;
     }
 
@@ -198,6 +225,8 @@ export default function CheckoutPage() {
         city: form.city,
         pincode: form.pincode,
         landmark: form.landmark,
+        latitude: form.latitude,
+        longitude: form.longitude,
       },
       items: items.map(i => ({
         itemId: i._id,
@@ -395,11 +424,65 @@ export default function CheckoutPage() {
                   />
                 </div>
               )}
-
               {form.orderType === 'delivery' && (
                 <div style={{ display: 'grid', gap: '10px' }}>
+                  <div style={{ marginBottom: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={getLiveLocation}
+                      disabled={locationLoading}
+                      style={{
+                        padding: '10px 14px',
+                        background: '#fdf0e8',
+                        color: '#c8501a',
+                        border: '1px solid #c8501a',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        fontSize: '13px',
+                        cursor: locationLoading ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      📍 {locationLoading ? 'Fetching location...' : 'Current location'}
+                    </button>
+                    {form.latitude && form.longitude && (
+                      <div
+                        style={{
+                          marginTop: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          fontSize: '13px',
+                          color: '#16a34a',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <span>✓ Live location shared! (Lat: {form.latitude.toFixed(4)}, Lng: {form.longitude.toFixed(4)})</span>
+                        <button
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, latitude: null, longitude: null }))}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#dc2626',
+                            textDecoration: 'underline',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            padding: 0,
+                          }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div>
-                    <label style={labelStyle}>Street Address *</label>
+                    <label style={labelStyle}>Street Address {form.latitude && form.longitude ? '' : '*'}</label>
                     <input
                       style={inputStyle}
                       value={form.street}

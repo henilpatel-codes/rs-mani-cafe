@@ -95,16 +95,46 @@ function OrderCard({ order, onUpdate }) {
           <a href={`tel:${order.phone}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#c8501a', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>
             <Phone size={13} /> {order.phone}
           </a>
-          {order.deliveryAddress?.street && (
+          {order.deliveryAddress?.street ? (
             <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#4a3728', fontSize: '13px' }}>
               <MapPin size={13} color="#c8501a" />
               {order.deliveryAddress.street}{order.deliveryAddress.city ? `, ${order.deliveryAddress.city}` : ''}
               {order.deliveryAddress.pincode ? ` - ${order.deliveryAddress.pincode}` : ''}
             </span>
-          )}
+          ) : (order.deliveryAddress?.latitude && order.deliveryAddress?.longitude) ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#4a3728', fontSize: '13px', fontWeight: 600 }}>
+              <MapPin size={13} color="#c8501a" />
+              Shared Live Location
+            </span>
+          ) : null}
         </div>
         {order.deliveryAddress?.landmark && (
           <div style={{ fontSize: '12px', color: '#7c5c3e', marginTop: '4px' }}>📍 Near: {order.deliveryAddress.landmark}</div>
+        )}
+        {order.deliveryAddress?.latitude && order.deliveryAddress?.longitude && (
+          <div style={{ marginTop: '8px' }}>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${order.deliveryAddress.latitude},${order.deliveryAddress.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#fdf0e8',
+                color: '#c8501a',
+                border: '1px solid #c8501a',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '12px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+              }}
+            >
+              🧭 Open Live Location (Google Maps)
+            </a>
+          </div>
         )}
       </div>
 
